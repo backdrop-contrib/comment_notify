@@ -1,0 +1,457 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * 
+ * This module provides comment follup e-mail notification for anonymous as well as reg'ed users.
+ 
+ 
+other folks needing this
+
+http://urlgreyhot.com/personal/weblog/anonymous_commenting_in_drupal_4_5_whats_missing
+    no updates since may
+
+http://www.brentrasmussen.com/log/anonymous_user_comments
+
+http://drupal.org/node/64920
+    make signup easier
+        
+http://drupal.org/node/76711
+    => send to subscriptions module
+
+performance for commenting
+    
+ http://drupal.org/node/50827
+
+useful threads:
+-----------------
+
+understanding hooks 
+    http://drupal.org/node/55243
+    for clean plugin-implementation
+ 
+The discussion in this thread reflects an opinion that I've held for quite some time now: the hooks system has (almost) no documentation, and it desperately needs more. It is one of the key concepts that any Drupal module developer needs to understand, and it is also quite a unique aspect of Drupal's architecture.
+ 
+
+the "comment" hook 
+    http://api.drupal.org/api/4.7/function/hook_comment
+
+
+other related modules that don't do the job
+
+
+commentmail
+    This module is for sending emails to registered users.  It includes a 
+    custom "mail" content type, but can also be used to add emailing to any
+    existing content type. 
+
+
+
+Wishlist:
+-----------
+
+    asyn mailing
+    
+    for big sites and even nodes with 50+ comment the in-sync mail sending can lead to 
+    a massive delay... so these mails should be put into a notification mail queue table 
+    and sent a bit later via cron... 
+
+
+    move settings to "comments -> configure" instead of modules->comment_notify
+      (more intuitive)
+      
+
+    use of alternative mailer
+    
+        is it required? why for a single notification mail?
+        
+ */
+
+define('DEFAULT_MAILTEXT','
+Hi %name,
+
+%commname has commented on: "%node_title"
+
+The post is about
+----
+%node_teaser
+----
+
+You can view the comment at the following url
+%comment_url
+
+You can stop receiving emails when someone replies to this blog post, 
+by going to %link1
+
+If you have auto-blog-following enabled in your account, you will receive emails like this for all replies to a blog post you commented on. You can disable this by logging in and going to your account settings or unchecking the flag at the time you post the comment.
+
+You can set up blog-following feature for all future posts 
+by creating your own user with a few clicks here %uri/user/register
+
+Thanks for your feedback,
+
+Webmaster of %site 
+%mission
+%uri 
+
+
+---
+This notification is sponsored by http://www.cemper.com
+');
+
+/**
+ * Implementation of hook_help().
+ */
+function comment_notify_help($section) {
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('Comment follup e-mail notification for anonymous as well as reg\'ed users.
+      sponsored by <a href=http://www.cemper.com>CEMPER.COM</a> - see it live at <a href=http://www.marketingfan.com>Marketingfan</a> ');
+      break;
+  }
+}
+
+/** 
+ * Insert our checkbox, and populate fields.
+ * set validation hook.
+ */
+function comment_notify_form_alter($form_id, &$form) { 
+
+  global $user;
+  if ( ($form_id != 'comment_form')) {
+  return;
+  }
+
+
+  $op = isset($_POST['op']) ? $_POST['op'] : '';
+
+  /*
+      if ( $user->comment_notify_mailalert ) {
+  
+      }
+  */
+  
+
+  if ($op == t('Preview comment')) {
+      drupal_set_message(
+        t('ATTENTION: your comment is NOT YET posted - please click the post button to confirm your post' )
+        );
+
+
+/*      $form['submitextra']['privatemsg_allow'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Allow private messages'),
+          '#default_value' => isset($edit['privatemsg_allow']) ? $edit['privatemsg_allow'] : 1,
+          '#description' => t('Check this box to allow users to send you private messages.')
+          );
+*/
+    #$form['submitextra']['preview'] = array('#type' => 'button', '#value' => t('Preview comment'), '#weight' => -19);
+  
+    //extra submit button on top
+    if (!form_get_errors() && ((variable_get('comment_preview', COMMENT_PREVIEW_REQUIRED) == COMMENT_PREVIEW_OPTIONAL) || ($op == t('Preview comment')) || ($op == t('Post comment')))) {
+      $form['submitextra'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Comment is not posted yet - please click post button to confirm your post'),
+          '#weight' => -99,
+          '#collapsible' => FALSE
+          );
+
+      $form['submitextra']['submit'] = array('#type' => 'submit', '#value' => t('Post comment'), '#weight' => -20);
+
+    }
+
+  }
+
+    
+#  drupal_set_message(' user:'. $user->uid .' setting: '.$user->comment_notify_mailalert );
+#  print_r($user);
+
+  if ( ($user->uid == 0) || ( variable_get("comment_notify_regged_checkbox", FALSE) ) ) {
+    $form['notify'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Notify me of follow-up comments posted here.', 
+      '#default_value' => ($user->uid != 0)?($user->comment_notify_mailalert):variable_get("comment_notify_default_anon_mailalert", TRUE)
+      );
+  } else
+  {
+    $form['notify'] = array(
+    '#type' => 'hidden',
+    '#title' => 'Mail me updates to this comment.', 
+    '#default_value' => variable_get("comment_notify_default_anon_mailalert", FALSE)
+    );
+  }
+}
+
+
+
+/**
+ * Implementation of hook_menu().
+ */
+function comment_notify_menu($may_cache) {
+  $items = array();
+  global $user;
+
+  if ($may_cache) {
+    $items[] = array('path' => 'admin/settings/comment_notify',
+        'title' => 'comment_notify',
+        'callback' => 'comment_notify_configure');
+  }
+  else {
+    $items[] = array('path' => 'comment_notify',
+                     'title' => t('comment notify') ,
+                     'callback' => 'comment_notify_page',
+                     'access'=>1,
+                     'type' => MENU_CALLBACK);
+  }
+  return $items;
+}
+
+
+
+function comment_notify_page() {
+  global $user;
+
+  $breadcrumb = NULL;
+  $op = $_POST["op"];
+  $edit = $_POST["edit"];
+
+ $page_content=" ";
+  if (empty($op)) {
+    $op = arg(1);
+  }
+  $arg = arg(2);
+
+  switch ($op) {
+    case 'disable':
+      $key=$arg;
+      
+      db_query("UPDATE {comments} c SET notify = 0 WHERE md5( concat( mail,uid,name,nid )) = '%s'",$arg);
+      
+
+      drupal_set_message(t("Your comment follow up notification for this post was disabled. Thanks"));
+      $title = t('Disabled comment follow up notification feature for this node');
+      
+      break;
+    default;
+      $title = t('Comment Notify');
+      break;
+  }
+  drupal_set_title($title);
+  drupal_set_breadcrumb($breadcrumb);
+  print theme("page", $page_content);
+    
+}
+
+/** 
+ * save our data.
+ */
+function comment_notify_validate($form_id, $form_values) { 
+
+  if ($form_values['optin']) {
+    foreach (array('optin') as $field) {
+      $_SESSION['comment_notify'][$field] = $form_values[$field];
+    }
+  } else {
+    foreach (array('optin') as $field) {
+      unset($_SESSION['comment_notify'][$field]);
+    }
+  }
+}
+
+/** 
+ * implement comment hook and check the publish status
+ */
+function comment_notify_comment($comment, $op) {
+  global $user;
+
+  switch($op) {
+
+    case 'publish':
+#      drupal_set_message(t('THE publish hook called').$mail.' '.$name  );
+#      drupal_set_message(t('222Comment is ').$comment->status .' ###'.$comment[cid] .' ###'.$comment[nid].' ##notify me#'.$comment['notify'] );
+     
+      _comment_notify_mailalert2( $comment );
+      break;
+  }
+}
+
+
+
+/**
+ * Implementation of hook_user().
+ */
+function comment_notify_user($type, &$edit, &$user, $category = NULL) {
+  switch ($type) {
+
+    case 'form':
+//      if (user_access('access private messages') && $category == 'account') {
+      if ( $category == 'account' ) {
+        $form = array();
+        $form['comment_notify_settings'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Comment follow up notification settings'),
+            '#weight' => 4,
+            '#collapsible' => TRUE
+            );
+        $form['comment_notify_settings']['comment_notify_mailalert'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Receive comment follow-up notification e-mails'),
+            '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : 1,
+            '#description' => t('Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow up notifications for comments you don\'t want follow up mails anymore - i.e. for very popular posts.')
+            );
+
+        return $form;
+      }
+      break;
+  }
+}
+
+function _comment_notify_mailalert2($comment) {
+  global $locale;
+  global $base_url;
+
+  $initial_locale = $locale;
+  if (function_exists('locale')) {
+    $languages = locale_supported_languages();
+    $languages = $languages['name'];
+  }
+
+    $nid = $comment[nid];
+    $cid = $comment[cid];
+    $commname= $comment[name];
+    $commtext= $comment[comment];
+    $commsubj= $comment[subject];
+    
+
+    $node = node_load($nid);
+#    print_r($node);
+
+    $from = variable_get('site_mail', ini_get('sendmail_from'));
+
+#        drupal_set_message ("send 1 for $nid");
+
+        
+    $result = db_query('SELECT DISTINCT c.mail,u.init,c.uid,c.name,c.nid ,IF(length(c.mail)<1, u.init,c.mail) mail,c.uid,c.name,max(cid) cid,md5( concat( c.mail,u.init,c.uid,c.name,c.nid ) ) mymd5
+    FROM {comments} c LEFT OUTER JOIN {users} u ON u.uid=c.uid
+    WHERE nid=%d  AND notify=1 AND c.status=0
+      AND LENGTH(IF(LENGTH(c.mail)<1, u.init,c.mail))>1 
+      AND IF(LENGTH(c.mail)<1, u.init,c.mail) like \'%@%.%\'
+    GROUP BY IF(LENGTH(c.mail)<1, u.init,c.mail),c.name',$nid
+    );
+
+  #      drupal_set_message ("send 2");
+    
+    $count=0;
+    
+    while ($alert = db_fetch_object($result)) {
+
+ #       drupal_set_message ("send 3");
+
+//    $user = user_load(array('uid' => $alert->recipient));
+
+  
+
+    // use each user's individual locale
+    if (function_exists('locale') && $languages[$user->language]) {
+    $locale = $user->language;
+    }
+    
+    $subject = t('%site :: new comment for your post.', array('%site' => variable_get('site_name', 'drupal')));
+    $message = t(variable_get('comment_notify_default_mailtext',DEFAULT_MAILTEXT),
+array(
+    '%commname' => $commname,
+    '%commtext' => $commtext,
+    '%commsubj' => $commsubj,
+    '%comment_url' => url('node/'.$nid,NULL,NULL,1)."#comment-".$cid,
+    '%node_title' =>  $node->title,
+    '%node_teaser' => $node->teaser,
+    '%mission' => variable_get('site_mission', ''), 
+    '%node_body' => $node->body,
+    '%name' => $alert->name, 
+    '%site' => variable_get('site_name', 'drupal'), 
+    '%uri' => $base_url, 
+    '%uri_brief' => substr($base_url, strlen('http://')), 
+    '%date' => format_date(time()), 
+    '%login_uri' => url('user', NULL, NULL, 1), 
+    '%edit_uri' => url('user/'. $alert->uid .'/edit', NULL, NULL, 1),
+    '%link1' => url('comment_notify/disable/'.$alert->mymd5, NULL, NULL, 1)
+)
+);
+
+
+    
+    user_mail($alert->mail, $subject, $message, "From: $from\nReply-to: $from\nX-Mailer: Drupal\nReturn-path: $from\nErrors-to: $from");
+    $count++;
+#       drupal_set_message ("send mail to $alert->mail");
+
+    
+    // revert to previous (site default) locale
+    $locale = $initial_locale;
+   
+  }
+  
+  drupal_set_message ("Thanks for your comment! I just sent out $count follow-up mail notifications!");
+  
+}
+
+
+function comment_notify_configure() {
+  $form = array();
+
+  $form['links']['comment_notify_background_mail'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send notification mails in background (yet to be implemented/future use)'),
+      '#return_value' => 1,
+      '#default_value' => variable_get('comment_notify_background_mail', 0),
+      '#description' => t('for big sites and even nodes with 50+ comment the in-sync mail sending can lead to 
+    a massive delay... so these mails will be put into a notification queue and sent a bit later via cron.')
+      );
+
+  $form['links']['comment_notify_regged_checkbox'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Let registered users select notification on a node basis'),
+      '#return_value' => 1,
+      '#default_value' => variable_get('comment_notify_regged_checkbox', TRUE),
+      '#description' => t('letting registered users select/unselect if they want to be notified. If this is disabled, this setting is propagated from their user profile, hence reducing and clutter and confusion')
+      );
+
+  $form['links']['comment_notify_default_anon_mailalert'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Fill checkbox for followup with YES by default for anonymous users, so they will get an email alert for follow up comments if they do not uncheck it then'),
+      '#return_value' => 1,
+      '#default_value' => variable_get('comment_notify_default_anon_mailalert', TRUE),
+      '#description' => t('This flag presets the flag for the follow-up notification on the form that anon users will see when posting a comment')
+      );
+
+  $form['links']['comment_notify_default_mailtext'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Default mail text for sending out the notifications.'),
+      '#description' => t("You can use the following variables to be replaced 
+      <ul>
+      <li>   %commname = the username who posted the comment
+      <li>   %commtext = the text of the posted comment
+      <li>   %commsubj = the subject of the posted comment
+      <li>   %comment_url = the full url of the post and comment - note: if you have paging enabled, this does not work correct - set your max comments per page so that all fit on one page or reverse order them    
+      <li>   %node_title = the title of the node that was commented on    
+      <li>   %node_teaser = the teaser of the node that was commented on    
+      <li>   %node_body = the body of the node that was commented on    
+      <li>   %mission = site_mission text    
+      <li>   %name = username receiving the alert   
+      <li>   %site = your site    
+      <li>   %uri = base_url of site   
+      <li>   %uri_brief = base_url of site w/o http    
+      <li>   %date = the current time    
+      <li>   %login_uri  uri to login the user   
+      <li>   %edit_uri = uri to edit user profile   
+      <li>   %link1 the QUICKLINK to disable future follow-up otifications for the user
+      </ul>"),
+      '#default_value' => variable_get('comment_notify_default_mailtext', t(DEFAULT_MAILTEXT) ),
+      '#return_value' => 1,
+      '#cols' => 80,
+      '#rows' => 15
+      );
+      
+  return system_settings_form('comment_notify_settings', $form);
+}
+

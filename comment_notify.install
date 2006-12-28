@@ -1,0 +1,64 @@
+<?php
+// $Id$
+ 
+
+/**
+ * Implementation of hook_install().
+ */
+function comment_notify_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+     $status[] = db_query("
+        ALTER TABLE {comments}
+	      ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '1'");
+      break;
+
+    case 'pgsql':
+     $status[] = db_query("
+        ALTER TABLE {comments}
+	      ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '1'");
+      break;
+  }
+  
+   // Set module weight for my module
+  $status[] = db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
+
+  // If there is one FALSE value in the status array, there was an error.
+  if (array_search(FALSE, $status) !== FALSE) {
+    drupal_set_message(t('Table installation for the comment_notify module was unsuccessful. The tables may need to be installed by hand.'), 'error');
+  }
+  else {
+    drupal_set_message(t('comment_notify module installed successfully.'));
+  }
+ 
+   
+}
+
+// Table creation called in update_1 to allow for the case
+// where a user is upgrading from a previous version of
+// the comment_notify module that did not use tables.
+function comment_notify_update_1() {
+    comment_notify_install();
+}
+
+// Table creation called in update_1 to allow for the case
+function comment_notify_update_2() {
+
+  // Set module weight for my module
+  $result  = db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
+  drupal_set_message( $results );
+
+  if ($result) {
+    drupal_set_message(t('comment_notify module weight config update successfully.'));
+  }
+  else {
+    drupal_set_message(t('comment_notify module weight config update unsuccessful.'), 'error');
+  }
+  
+  $ret[]=$result;
+  return $ret;
+}
+
+
+?>
