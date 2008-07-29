@@ -78,18 +78,26 @@ function comment_notify_form_alter($form_id, &$form) {
     }
   }
 
-  if (($user->uid == 0) || (variable_get('comment_notify_regged_checkbox', TRUE))) {
+  if ($user->uid == 0) {
     $form['notify'] = array(
       '#type' => 'checkbox',
       '#title' => t('Notify me of follow-up comments posted here.'),
-      '#default_value' => ($user->uid != 0) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_mailalert', TRUE)
+      '#default_value' => ($user->uid != 0) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_mailalert', TRUE),
+    );
+  }
+  elseif (variable_get('comment_notify_regged_checkbox', TRUE)) {
+    $form['notify'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Notify me of follow-up comments posted here.'),
+      '#default_value' => ($user->uid != 0) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_mailalert', TRUE),
+      '#description' => t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>', array('!uri' => url('user/'. $user->uid .'/edit'))),
     );
   }
   else {
     $form['notify'] = array(
       '#type' => 'hidden',
       '#title' => t('Mail me updates to this comment.'),
-      '#default_value' => $user->comment_notify_mailalert
+      '#default_value' => $user->comment_notify_mailalert,
     );
   }
 
@@ -244,7 +252,7 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
         $form['comment_notify_settings']['comment_notify_mailalert'] = array(
           '#type' => 'checkbox',
           '#title' => t('Receive comment follow-up notification e-mails'),
-          '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : 1,
+          '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : 0,
           '#description' => t('Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don\'t want follow-up mails anymore - i.e. for very popular posts.')
         );
 
