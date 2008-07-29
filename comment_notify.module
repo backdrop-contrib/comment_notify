@@ -225,6 +225,12 @@ function comment_notify_comment($comment, $op) {
   global $user;
 
   switch ($op) {
+    case 'validate':
+      // We assume that if they are non-anonymous then they have a valid mail
+      if (!$user->uid && $comment['notify'] && empty($comment['mail'])) {
+        form_set_error('mail', t('If you want to subscribe to comments you must supply a valid e-mail address.'));
+      }
+      break;
     case 'publish':
       _comment_notify_mailalert($comment);
       break;
