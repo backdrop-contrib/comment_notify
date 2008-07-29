@@ -8,27 +8,42 @@ function comment_notify_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-      $status[] = db_query("
-        ALTER TABLE {comments}
-        ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '0'");
+      // Create a table to hold the data.
+      $status[] = db_query("CREATE TABLE {comment_notify} (
+        cid int NOT NULL auto_increment,
+        notify tinyint unsigned NOT NULL default 0,
+        notify_hash varchar(32) NOT NULL default '',
+        PRIMARY KEY (cid),
+        KEY notify_hash (notify_hash)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      // Insert a record for each existing comment.
+      $status[] = db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, 0, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c LEFT OUTER JOIN {users} u on c.uid = u.uid");
       break;
-
     case 'pgsql':
-      $status[] = db_query("
-        ALTER TABLE {comments}
-        ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '0'");
+      // Do the same for PostgreSQL.
+      $status[] = db_query("CREATE TABLE {comments} (
+        cid integer NOT NULL,
+        notify smallint_unsigned NOT NULL default '0',
+        notify_hash varchar(32) NOT NULL default '',
+        PRIMARY KEY (cid)
+      )");
+      $status[] = db_query("CREATE INDEX {comment_notify}_notify_hash_idx ON {comment_notify} (notify_hash)");
+      $status[] = db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, 0, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c LEFT OUTER JOIN {users} u on c.uid = u.uid");
       break;
   }
   
-   // Set module weight for my module
+   // Set module weight low so that other modules act on the comment first.
   $status[] = db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
 
   // If there is one FALSE value in the status array, there was an error.
   if (array_search(FALSE, $status) !== FALSE) {
-    drupal_set_message(t('Database modifications for the comment_notify module was unsuccessful. The modifications may need to be made by hand.'), 'error');
+    drupal_set_message(t('Database modifications for the comment_notify module were unsuccessful. The modifications may need to be made by hand.'), 'error');
   }
-  else {
-    drupal_set_message(t('comment_notify module installed successfully.'));
+}
+
+function comment_notify_uninstall(){
+  if (db_table_exists('comment_notify')) {
+    db_query("DROP TABLE {comment_notify}");
   }
 }
 
@@ -68,7 +83,7 @@ function comment_notify_update_3() {
   else {
     drupal_set_message(t('comment_notify mail text migration unsuccessful.'), 'error');
   }
-  
+
   $ret[]=$result;
   return $ret;
 }
@@ -80,4 +95,39 @@ function comment_notify_update_4(){
   $ret = array();
   $ret[] = update_sql("ALTER TABLE {comments} MODIFY notify tinyint(1) NOT NULL DEFAULT '0'");
   return $ret;
+}
+
+/*
+ * Break out to our own table.
+ */
+function comment_notify_update_5() {
+  // Create the new tables...
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {comment_notify} (
+        cid int NOT NULL auto_increment,
+        notify tinyint unsigned NOT NULL default 0,
+        notify_hash varchar(32) NOT NULL default '',
+        PRIMARY KEY (cid),
+        KEY notify_hash (notify_hash)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      break;
+    case 'pgsql':
+      db_query("CREATE TABLE {comments} (
+        cid serial,
+        notify smallint_unsigned NOT NULL default '0',
+        notify_hash varchar(32) NOT NULL default '',
+        PRIMARY KEY (cid)
+      )");
+      db_query("CREATE INDEX {comment_notify}_notify_hash_idx ON {comment_notify} (notify_hash)");
+      break;
+  }
+
+  // Move the data over there from the previous location.
+  $ret = array();
+  $ret[] = update_sql("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, c.notify, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c INNER JOIN {users} u on c.uid = u.uid");
+  return $ret;
+
+  // TODO alter the comments table to remove my column?
 }

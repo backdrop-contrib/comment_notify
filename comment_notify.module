@@ -94,7 +94,8 @@ function comment_notify_form_alter($form_id, &$form) {
   }
 
   if ($form['cid']['#value'] != '') {
-    $form['notify']['#default_value'] = $form['#parameters'][1]['notify'];
+    $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
+    $form['notify']['#default_value'] = $notify;
   }
 }
 
@@ -169,12 +170,7 @@ function comment_notify_page() {
   switch ($op) {
     case 'disable':
       $key = $arg;
-      db_query("UPDATE {comments} c, {users} u
-          SET c.notify = 0
-        WHERE u.uid = c.uid
-          AND md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) = '%s'",
-        $arg
-      );
+      db_query("UPDATE {comment_notify} c SET c.notify = 0 WHERE notify_hash = '%s'", $arg);
 
       drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
       $title = t('Disabled comment follow-up notification feature for this post.');
@@ -217,9 +213,15 @@ function comment_notify_comment($comment, $op) {
       _comment_notify_mailalert($comment);
       break;
     case 'update':
-    case 'insert':
-      $sql = 'UPDATE {comments} set notify = %d where cid = %d';
+      $sql = 'UPDATE {comment_notify} SET notify = %d WHERE cid = %d';
       db_query($sql, $comment['notify'], $comment['cid']);
+      break;
+
+    case 'insert':
+      $mail = empty($comment['mail']) ? $user->mail : $comment['mail'];
+      $md5_string = $mail . $user->uid . $comment['name'] . $comment['nid'];
+      $sql = "INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')";
+      db_query($sql, $comment['cid'], $comment['notify'], md5($md5_string));
       break;
   }
 }
@@ -280,21 +282,20 @@ function _comment_notify_mailalert($comment) {
   }
 
   $from = variable_get('site_mail', ini_get('sendmail_from'));
-
-  $result = db_query('SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, IF(length(c.mail) < 1, ifnull(u.mail, u.init), c.mail) mail, c.uid, c.name, max(cid) cid, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) mymd5
-    FROM {comments} c LEFT OUTER JOIN {users} u ON u.uid = c.uid
-    WHERE nid = %d  AND notify = 1 AND c.status = 0
-      AND LENGTH(IF(LENGTH(c.mail) < 1, ifnull(u.mail, u.init), c.mail)) > 1
-      AND IF(LENGTH(c.mail) < 1, ifnull(u.mail, u.init), c.mail) like \'%@%.%\'
-    GROUP BY IF(LENGTH(c.mail) < 1, ifnull(u.mail, u.init), c.mail), c.name',
-    $nid
+  $result = db_query('SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail cmail, u.mail umail, u.init uinit, c.uid, c.name, cn.notify_hash mymd5
+    FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
+    WHERE nid = %d  AND cn.notify = 1 AND c.status = 0', $nid
   );
+  // TODO? the original big query had stuff making sure the mail was populated and contained .+@.+ Perhaps check for that here and set notify = 0 if that is the case for this cid
 
   $count = 0;
   $sent_to = array();
 
   while ($alert = db_fetch_object($result)) {
-    if ($alert->mail != $comment_mail && !in_array($alert->mail, $sent_to) && $alert->uid != $comment->uid) {
+    $umail = empty($alert->umail) ? $alert->uinit : $alert->umail;
+    $mail = empty($alert->cmail) ? $umail : $alert->cmail;
+
+    if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
 
       if (function_exists('locale') && $languages[$user->language]) {
         $locale = $user->language;
@@ -323,17 +324,17 @@ function _comment_notify_mailalert($comment) {
         )
       );
 
-      drupal_mail('comment_notify_mail', $alert->mail, $subject, $message, $from, array());
+      drupal_mail('comment_notify_mail', $mail, $subject, $message, $from, array());
       $count++;
-      $sent_to[] = $alert->mail;
+      $sent_to[] = $mail;
 
       if ($alert->uid != 0) {
         $watchdog_message = t('Notified: <a href="!url">@user_mail</a>', 
-          array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $alert->mail)) ;
+          array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $mail)) ;
 
       }
       else {
-        $watchdog_message = t('Notified @user_mail', array('@user_mail' => $alert->mail));
+        $watchdog_message = t('Notified @user_mail', array('@user_mail' => $mail));
       }
 
       // Add an entry to the watchdog log.
@@ -370,12 +371,12 @@ function comment_notify_unsubscribe_submit($form_id, $form_values) {
   // If they have a uid, use that, otherwise update comments directly
   $result = db_result(db_query_range("SELECT uid FROM {users} WHERE mail = '%s'", $email, 0, 1)); 
   if ($result > 0) {
-    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} WHERE uid = %d AND notify = 1", $result));
-    db_query("UPDATE {comments} SET notify = 0 WHERE uid = %d", $result);
+    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.uid = %d AND cn.notify = 1", $result));
+    db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.uid = %d", $result);
   }
   else {
-    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} WHERE mail = '%s' AND notify = 1", $email));
-    db_query("UPDATE {comments} SET notify = 0 WHERE mail = '%s'", $email);
+    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.mail = '%s' AND cn.notify = 1", $email));
+    db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.mail = '%s'", $email);
   }
   // Update the admin about the state of this comment notification subscription.
   if ($comments == 0) {
@@ -387,7 +388,9 @@ function comment_notify_unsubscribe_submit($form_id, $form_values) {
   }
 }
 
-
+/*
+ * Page callback for administrative settings form.
+ */
 function comment_notify_settings() {
   $form['comment_notify_settings'] = array();
   $form['comment_notify_settings']['comment_notify_regged_checkbox'] = array(
