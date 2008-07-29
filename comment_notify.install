@@ -41,7 +41,7 @@ function comment_notify_install() {
   }
 }
 
-function comment_notify_uninstall(){
+function comment_notify_uninstall() {
   if (db_table_exists('comment_notify')) {
     db_query("DROP TABLE {comment_notify}");
   }
@@ -91,7 +91,7 @@ function comment_notify_update_3() {
 /*
  * Set the default to 0 for upgrades so users must opt in to get emails.
  */
-function comment_notify_update_4(){
+function comment_notify_update_4() {
   $ret = array();
   $ret[] = update_sql("ALTER TABLE {comments} MODIFY notify tinyint(1) NOT NULL DEFAULT '0'");
   return $ret;

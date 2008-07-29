@@ -62,7 +62,7 @@ function comment_notify_form_alter($form_id, &$form) {
   $enabled_types = variable_get('comment_notify_node_types', array());
   if (!$enabled_types[$node->type]) {
     return;
-  }  
+  }
 
   $op = isset($_POST['op']) ? $_POST['op'] : '';
 
@@ -131,13 +131,13 @@ function comment_notify_menu($may_cache) {
 
   if ($may_cache) {
     $items[] = array(
-      'path' => 'admin/settings/comment_notify', 
-      'title' => t('Comment Notify'), 
-      'description' => t('Configure settings for e-mails about new comments.'), 
-      'callback' => 'drupal_get_form', 
-      'callback arguments' => array('comment_notify_settings'), 
-      'access' => user_access('Administer comment notify'),   
-    ); 
+      'path' => 'admin/settings/comment_notify',
+      'title' => t('Comment Notify'),
+      'description' => t('Configure settings for e-mails about new comments.'),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('comment_notify_settings'),
+      'access' => user_access('Administer comment notify'),
+    );
     $items[] = array(
       'path' => 'admin/settings/comment_notify/settings',
       'title' => t('Settings'),
@@ -351,7 +351,7 @@ function _comment_notify_mailalert($comment) {
       $sent_to[] = $mail;
 
       if ($alert->uid != 0) {
-        $watchdog_message = t('Notified: <a href="!url">@user_mail</a>', 
+        $watchdog_message = t('Notified: <a href="!url">@user_mail</a>',
           array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $mail)) ;
 
       }
@@ -385,13 +385,13 @@ function comment_notify_unsubscribe() {
   return $form;
 }
 
-/** 
- * Actual unsubscribe of users. 
+/**
+ * Actual unsubscribe of users.
  */
 function comment_notify_unsubscribe_submit($form_id, $form_values) {
   $email = trim($form_values['email_to_unsubscribe']);
   // If they have a uid, use that, otherwise update comments directly
-  $result = db_result(db_query_range("SELECT uid FROM {users} WHERE mail = '%s'", $email, 0, 1)); 
+  $result = db_result(db_query_range("SELECT uid FROM {users} WHERE mail = '%s'", $email, 0, 1));
   if ($result > 0) {
     $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.uid = %d AND cn.notify = 1", $result));
     db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.uid = %d", $result);
