@@ -1,26 +1,16 @@
+Installation for Drupal 5.x
 
-This module is currently only supported for 4.7
+1. Patch the comment.module at modules/comment/comment.module with the 
+   file comment_notify_patch_to_comment.patch.  If you are unsure how to
+   apply patch files please read http://drupal.org/patch/apply or simply 
+   open the file and manually take the actions that it shows.  For Drupal6.x
+   the patch was accepted and this is no longer necessary.
 
-Installation
+   Note: When you upgrade Drupal core you will need to re-apply that patch 
+     to keep this module working.
 
-- enable module in Drupal
-- after the normal install you need to apply a patch to the core comment.module  
+2. Enable module on the Administer > Site Building > Modules
 
-  you need - the GNU patch module (e.g. from http://gnuwin32.sourceforge.net/packages/patch.htm for windows)
-  
-  then copy the patch file to the modules dif (where comment.module lies)
-  
-  and type ina cmd box
-  
-  patch -p0 < comment.module.patch
-  
-  when it asks 
-  
-    File to patch:
-    
-  you type in again
-  
-    comment.module 
-    
-  as the comment.module is obviously newer than when the patch was created you 
-  
+3. Configure the settings for comments, especially
+    -comment moderation on/off
+    -users must leave their contact info (set to yes, or how shall we mail them?)

@@ -1,6 +1,5 @@
 <?php
 // $Id$
- 
 
 /**
  * Implementation of hook_install().
@@ -9,15 +8,15 @@ function comment_notify_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-     $status[] = db_query("
+      $status[] = db_query("
         ALTER TABLE {comments}
-	      ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '1'");
+        ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '0'");
       break;
 
     case 'pgsql':
-     $status[] = db_query("
+      $status[] = db_query("
         ALTER TABLE {comments}
-	      ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '1'");
+        ADD COLUMN `notify` tinyint(1) NOT NULL DEFAULT '0'");
       break;
   }
   
@@ -26,28 +25,25 @@ function comment_notify_install() {
 
   // If there is one FALSE value in the status array, there was an error.
   if (array_search(FALSE, $status) !== FALSE) {
-    drupal_set_message(t('Table installation for the comment_notify module was unsuccessful. The tables may need to be installed by hand.'), 'error');
+    drupal_set_message(t('Database modifications for the comment_notify module was unsuccessful. The modifications may need to be made by hand.'), 'error');
   }
   else {
     drupal_set_message(t('comment_notify module installed successfully.'));
   }
- 
-   
 }
 
 // Table creation called in update_1 to allow for the case
 // where a user is upgrading from a previous version of
 // the comment_notify module that did not use tables.
 function comment_notify_update_1() {
-    comment_notify_install();
+  comment_notify_install();
 }
 
 // Table creation called in update_1 to allow for the case
 function comment_notify_update_2() {
-
   // Set module weight for my module
   $result  = db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
-  drupal_set_message( $results );
+  drupal_set_message($results);
 
   if ($result) {
     drupal_set_message(t('comment_notify module weight config update successfully.'));
@@ -56,9 +52,32 @@ function comment_notify_update_2() {
     drupal_set_message(t('comment_notify module weight config update unsuccessful.'), 'error');
   }
   
+  $ret[] = $result;
+  return $ret;
+}
+
+// modify default mailtext to contain ! instead of % for placeholders
+function comment_notify_update_3() {
+  // Set module weight for my module
+  $result  = db_query("UPDATE {variable} SET value = replace(value, '%', '!') WHERE name = 'comment_notify_default_mailtext'");
+  drupal_set_message($results);
+
+  if ($result) {
+    drupal_set_message(t('comment_notify mail text migration successful.'));
+  }
+  else {
+    drupal_set_message(t('comment_notify mail text migration unsuccessful.'), 'error');
+  }
+  
   $ret[]=$result;
   return $ret;
 }
 
-
-?>
+/*
+ * Set the default to 0 for upgrades so users must opt in to get emails.
+ */
+function comment_notify_update_4(){
+  $ret = array();
+  $ret[] = update_sql("ALTER TABLE {comments} MODIFY notify tinyint(1) NOT NULL DEFAULT '0'");
+  return $ret;
+}
