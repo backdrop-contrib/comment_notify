@@ -52,7 +52,8 @@ function comment_notify_help($section) {
 function comment_notify_form_alter($form_id, &$form) {
   global $user;
 
-  if ($form_id != 'comment_form') {
+  // Only do alter the form if it's a comment form and the user has the permission to subscribe
+  if ($form_id != 'comment_form' || !user_access('Subscribe to comments')) {
     return;
   }
 
@@ -118,7 +119,7 @@ function comment_notify_form_alter($form_id, &$form) {
  * Implementation of hook_perm
  */
 function comment_notify_perm() {
-  return array('Administer comment notify');
+  return array('Administer comment notify', 'Subscribe to comments');
 }
 
 /**
