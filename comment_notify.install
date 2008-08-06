@@ -5,129 +5,46 @@
  * Implementation of hook_install().
  */
 function comment_notify_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      // Create a table to hold the data.
-      $status[] = db_query("CREATE TABLE {comment_notify} (
-        cid int NOT NULL auto_increment,
-        notify tinyint unsigned NOT NULL default 0,
-        notify_hash varchar(32) NOT NULL default '',
-        PRIMARY KEY (cid),
-        KEY notify_hash (notify_hash)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      // Insert a record for each existing comment.
-      $status[] = db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, 0, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c LEFT OUTER JOIN {users} u on c.uid = u.uid");
-      break;
-    case 'pgsql':
-      // Do the same for PostgreSQL.
-      $status[] = db_query("CREATE TABLE {comments} (
-        cid integer NOT NULL,
-        notify smallint_unsigned NOT NULL default '0',
-        notify_hash varchar(32) NOT NULL default '',
-        PRIMARY KEY (cid)
-      )");
-      $status[] = db_query("CREATE INDEX {comment_notify}_notify_hash_idx ON {comment_notify} (notify_hash)");
-      $status[] = db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, 0, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c LEFT OUTER JOIN {users} u on c.uid = u.uid");
-      break;
-  }
+  // Create the table.
+  drupal_install_schema('comment_notify');
+
+  // Insert a record for each existing comment.
+  db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, 0, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c LEFT OUTER JOIN {users} u on c.uid = u.uid");
   
    // Set module weight low so that other modules act on the comment first.
-  $status[] = db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
-
-  // If there is one FALSE value in the status array, there was an error.
-  if (array_search(FALSE, $status) !== FALSE) {
-    drupal_set_message(t('Database modifications for the comment_notify module were unsuccessful. The modifications may need to be made by hand.'), 'error');
-  }
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
 }
 
 function comment_notify_uninstall() {
-  if (db_table_exists('comment_notify')) {
-    db_query("DROP TABLE {comment_notify}");
-  }
+  drupal_uninstall_schema('comment_notify');
+  // TODO cleanup variables
 }
 
-// Table creation called in update_1 to allow for the case
-// where a user is upgrading from a previous version of
-// the comment_notify module that did not use tables.
-function comment_notify_update_1() {
-  comment_notify_install();
-}
-
-// Table creation called in update_1 to allow for the case
-function comment_notify_update_2() {
-  // Set module weight for my module
-  $result  = db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
-  drupal_set_message($results);
-
-  if ($result) {
-    drupal_set_message(t('comment_notify module weight config update successfully.'));
-  }
-  else {
-    drupal_set_message(t('comment_notify module weight config update unsuccessful.'), 'error');
-  }
-  
-  $ret[] = $result;
-  return $ret;
-}
-
-// modify default mailtext to contain ! instead of % for placeholders
-function comment_notify_update_3() {
-  // Set module weight for my module
-  $result  = db_query("UPDATE {variable} SET value = replace(value, '%', '!') WHERE name = 'comment_notify_default_mailtext'");
-  drupal_set_message($results);
-
-  if ($result) {
-    drupal_set_message(t('comment_notify mail text migration successful.'));
-  }
-  else {
-    drupal_set_message(t('comment_notify mail text migration unsuccessful.'), 'error');
-  }
-
-  $ret[]=$result;
-  return $ret;
-}
-
-/*
- * Set the default to 0 for upgrades so users must opt in to get emails.
- */
-function comment_notify_update_4() {
-  $ret = array();
-  $ret[] = update_sql("ALTER TABLE {comments} MODIFY notify tinyint(1) NOT NULL DEFAULT '0'");
-  return $ret;
-}
-
-/*
- * Break out to our own table.
- */
-function comment_notify_update_5() {
-  // Create the new tables...
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {comment_notify} (
-        cid int NOT NULL auto_increment,
-        notify tinyint unsigned NOT NULL default 0,
-        notify_hash varchar(32) NOT NULL default '',
-        PRIMARY KEY (cid),
-        KEY notify_hash (notify_hash)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      break;
-    case 'pgsql':
-      db_query("CREATE TABLE {comments} (
-        cid serial,
-        notify smallint_unsigned NOT NULL default '0',
-        notify_hash varchar(32) NOT NULL default '',
-        PRIMARY KEY (cid)
-      )");
-      db_query("CREATE INDEX {comment_notify}_notify_hash_idx ON {comment_notify} (notify_hash)");
-      break;
-  }
-
-  // Move the data over there from the previous location.
-  $ret = array();
-  $ret[] = update_sql("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, c.notify, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c INNER JOIN {users} u on c.uid = u.uid");
-  return $ret;
-
-  // TODO alter the comments table to remove my column?
+function comment_notify_schema() {
+  $schema['comment_notify'] = array(
+    'description' => t('Stores information about which commenters on the site have subscriped to followup emails.'),
+    'fields' => array(
+      'cid' => array(
+        'type' => 'serial',
+        'description' => 'The comment id from {comments}.cid',
+        'not null' => TRUE,
+        'disp-width' => '11'),
+      'notify' => array(
+        'type' => 'int',
+        'description' => 'A boolean indicator for whether or not they subscribed: 1 means subscribed, 0 means not subscribed.',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'disp-width' => '11'),
+      'notify_hash' => array(
+        'type' => 'varchar',
+        'description' => 'An md5 hash of unique information about the commenter.  Used for unsubscribing users.',
+        'length' => '32',
+        'not null' => TRUE,
+        'default' => ''),
+    ),
+    'primary key' => array('cid'),
+    'indexes' => array(
+      'notify_hash' => array('notify_hash')),
+  );
+  return $schema;
 }

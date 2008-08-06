@@ -37,8 +37,8 @@ Webmaster of !site
 /**
  * Implementation of hook_help().
  */
-function comment_notify_help($section) {
-  switch ($section) {
+function comment_notify_help($path, $arg) {
+  switch ($path) {
     case 'admin/modules#description':
       return t('Comment follow-up e-mail notification for anonymous and registered users.');
       break;
@@ -46,10 +46,9 @@ function comment_notify_help($section) {
 }
 
 /**
- * Insert our checkbox, and populate fields.
- * set validation hook.
+ * Insert our checkbox, add a submit button, and populate fields.
  */
-function comment_notify_form_alter($form_id, &$form) {
+function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   global $user;
 
   // Only do alter the form if it's a comment form and the user has the permission to subscribe
@@ -59,11 +58,12 @@ function comment_notify_form_alter($form_id, &$form) {
 
   // Only add the checkbox if this is an enabled content type
   $node = node_load($form['nid']['#value']);
-  $enabled_types = variable_get('comment_notify_node_types', array());
-  if (!$enabled_types[$node->type]) {
+  $enabled_types = variable_get('comment_notify_node_types', array($node->type => TRUE));
+  if (empty($enabled_types[$node->type])) {
     return;
   }
 
+  // If this is a POST then it is a preview and we remind people that there post isn't done yet.
   $op = isset($_POST['op']) ? $_POST['op'] : '';
 
   if ($op == t('Preview comment')) {
@@ -86,6 +86,7 @@ function comment_notify_form_alter($form_id, &$form) {
     }
   }
 
+  // Add the checkbox for anonymous users and set the default based on admin settings.
   if ($user->uid == 0) {
     $form['notify'] = array(
       '#type' => 'checkbox',
@@ -93,14 +94,17 @@ function comment_notify_form_alter($form_id, &$form) {
       '#default_value' => ($user->uid != 0) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_mailalert', TRUE),
     );
   }
+  // For registered users and the admin wants them to see the checkbox.
   elseif (variable_get('comment_notify_regged_checkbox', TRUE)) {
+    $user_setting = empty($user->comment_notify_mailalert) ? FALSE : $user->comment_notify_mailalert;
     $form['notify'] = array(
       '#type' => 'checkbox',
       '#title' => t('Notify me of follow-up comments posted here.'),
-      '#default_value' => ($user->uid != 0) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_mailalert', TRUE),
+      '#default_value' => ($user->uid != 0) ? $user_setting : variable_get('comment_notify_default_anon_mailalert', TRUE),
       '#description' => t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>', array('!uri' => url('user/'. $user->uid .'/edit'))),
     );
   }
+  // For the registered users where the admin wants the checkbox hidden.
   else {
     $form['notify'] = array(
       '#type' => 'hidden',
@@ -108,7 +112,7 @@ function comment_notify_form_alter($form_id, &$form) {
       '#default_value' => $user->comment_notify_mailalert,
     );
   }
-
+  // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
     $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
     $form['notify']['#default_value'] = $notify;
@@ -116,7 +120,7 @@ function comment_notify_form_alter($form_id, &$form) {
 }
 
 /**
- * Implementation of hook_perm
+ * Implementation of hook_perm().
  */
 function comment_notify_perm() {
   return array('Administer comment notify', 'Subscribe to comments');
@@ -125,55 +129,50 @@ function comment_notify_perm() {
 /**
  * Implementation of hook_menu().
  */
-function comment_notify_menu($may_cache) {
-  $items = array();
-  global $user;
+function comment_notify_menu() {
 
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/settings/comment_notify',
-      'title' => t('Comment Notify'),
-      'description' => t('Configure settings for e-mails about new comments.'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('comment_notify_settings'),
-      'access' => user_access('Administer comment notify'),
-    );
-    $items[] = array(
-      'path' => 'admin/settings/comment_notify/settings',
-      'title' => t('Settings'),
-      'callback' => 'drupal_get_form',
-      'description' => t('Configure settings for e-mails about new comments.'),
-      'callback arguments' => array('comment_notify_settings'),
-      'access' => user_access('Administer comment notify'),
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-    );
-    $items[] = array(
-      'path' => 'admin/settings/comment_notify/unsubscribe',
-      'title' => t('Unsubscribe'),
-      'weight' => 2,
-      'callback' => 'drupal_get_form',
-      'description' => t('Unsubscribe an email from all notifications.'),
-      'callback arguments' => array('comment_notify_unsubscribe'),
-      'access' => user_access('Administer comment notify'),
-      'type' => MENU_LOCAL_TASK,
-    );
-  }
-  else {
-    $items[] = array(
-      'path' => 'comment_notify',
-      'title' => t('comment notify') ,
-      'callback' => 'comment_notify_page',
-      'access' => 1,
-      'type' => MENU_CALLBACK
-    );
-  }
+  $items['admin/settings/comment_notify'] = array(
+    'title' => 'Comment Notify',
+    'description' => 'Configure settings for e-mails about new comments.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('comment_notify_settings'),
+    'access arguments' => array('Administer comment notify'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  /*  $items['admin/settings/comment_notify/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Configure settings for e-mails about new comments.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('comment_notify_settings'),
+    'access arguments' => array('Administer comment notify'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  */
+  $items['admin/settings/comment_notify/unsubscribe'] = array(
+    'title' => 'Unsubscribe',
+    'description' => 'Unsubscribe an email from all notifications.',
+    'weight' => 2,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('comment_notify_unsubscribe'),
+    'access arguments' => array('Administer comment notify'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['comment_notify'] = array(
+    'title' => 'comment notify',
+    'page callback' => 'comment_notify_page',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK
+  );
+
   return $items;
 }
 
+/**
+ * Page callback to allow users to unsubscribe simply by visiting the page.
+ */
 function comment_notify_page() {
   global $user;
 
-  $breadcrumb = NULL;
   $op = $_POST['op'];
   $edit = $_POST['edit'];
 
@@ -197,53 +196,38 @@ function comment_notify_page() {
   }
 
   drupal_set_title($title);
-  drupal_set_breadcrumb($breadcrumb);
   print theme('page', $page_content);
 }
 
 /**
- * save our data.
- */
-function comment_notify_validate($form_id, $form_values) {
-
-  if ($form_values['optin']) {
-    foreach (array('optin') as $field) {
-      $_SESSION['comment_notify'][$field] = $form_values[$field];
-    }
-  }
-  else {
-    foreach (array('optin') as $field) {
-      unset($_SESSION['comment_notify'][$field]);
-    }
-  }
-}
-
-/**
- * implement hook_comment and check the publish status
+ * Implementation of hook_comment().
  */
 function comment_notify_comment($comment, $op) {
   global $user;
 
   switch ($op) {
     case 'validate':
-      // We assume that if they are non-anonymous then they have a valid mail
+       // We assume that if they are non-anonymous then they have a valid mail.
+       // For anonymous users, though, we verify that they entered a mail and let comment.module validate it is real.
       if (!$user->uid && $comment['notify'] && empty($comment['mail'])) {
         form_set_error('mail', t('If you want to subscribe to comments you must supply a valid e-mail address.'));
       }
       break;
     case 'publish':
+      // The real meat of the module.
       _comment_notify_mailalert($comment);
       break;
     case 'update':
+      // In case they have changed their status, save it in the database.
       $sql = 'UPDATE {comment_notify} SET notify = %d WHERE cid = %d';
       db_query($sql, $comment['notify'], $comment['cid']);
       break;
-
     case 'insert':
+      // For new comments, we first build up a string to be used s the md5 identifier for the alert
       $mail = empty($comment['mail']) ? $user->mail : $comment['mail'];
       $md5_string = $mail . $user->uid . $comment['name'] . $comment['nid'];
-      $sql = "INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')";
-      db_query($sql, $comment['cid'], $comment['notify'], md5($md5_string));
+      // And then save the data.
+      db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $comment['notify'], md5($md5_string));
       break;
   }
 }
@@ -267,9 +251,8 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
           '#type' => 'checkbox',
           '#title' => t('Receive comment follow-up notification e-mails'),
           '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : 0,
-          '#description' => t('Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don\'t want follow-up mails anymore - i.e. for very popular posts.')
+          '#description' => t("Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don't want follow-up mails anymore - i.e. for very popular posts.")
         );
-
         return $form;
       }
 
@@ -277,12 +260,18 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
   }
 }
 
+/**
+ * Private function to send the notifications.
+ * 
+ * @param $comment
+ *   The comment array as found in hook_comment $op = publish.
+ */
 function _comment_notify_mailalert($comment) {
   $comment = (object) $comment;
-  global $locale;
+  global $language;
   global $base_url;
 
-  $initial_locale = $locale;
+  $initial_locale = $language;
 
   if (function_exists('locale')) {
     $languages = locale_supported_languages();
@@ -291,12 +280,9 @@ function _comment_notify_mailalert($comment) {
 
   $nid = $comment->nid;
   $cid = $comment->cid;
-  $commname = $comment->name;
-  $commtext = $comment->comment;
-  $commsubj = $comment->subject;
   $node = node_load($nid);
   if (!isset($comment->mail)) {
-    $comment_account = user_load(array('name' => $commname));
+    $comment_account = user_load(array('name' => $comment->name));
     $comment_mail = $comment_account->mail;
   }
   else {
@@ -320,16 +306,16 @@ function _comment_notify_mailalert($comment) {
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
 
       if (function_exists('locale') && $languages[$user->language]) {
-        $locale = $user->language;
+        $language = $user->language;
       }
 
       $subject = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
       $message = t(
         variable_get('comment_notify_default_mailtext', DEFAULT_MAILTEXT),
         array(
-          '!commname' => $commname,
-          '!commtext' => $commtext,
-          '!commsubj' => $commsubj,
+          '!commname' => $comment->name,
+          '!commtext' => $comment->comment,
+          '!commsubj' => $comment->subject,
           '!comment_url' => url('node/'. $nid, NULL, NULL, 1) .'#comment-'. $cid,
           '!node_title' =>  $node->title,
           '!node_teaser' => $node->teaser,
@@ -340,9 +326,9 @@ function _comment_notify_mailalert($comment) {
           '!uri' => $base_url,
           '!uri_brief' => substr($base_url, strlen('http://')),
           '!date' => format_date(time()),
-          '!login_uri' => url('user', NULL, NULL, 1),
-          '!edit_uri' => url('user/'. $alert->uid .'/edit', NULL, NULL, 1),
-          '!link1' => url('comment_notify/disable/'. $alert->mymd5, NULL, NULL, 1)
+          '!login_uri' => url('user', array('absolute' => TRUE)),
+          '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE)),
+          '!link1' => url('comment_notify/disable/'. $alert->mymd5, array('absolute' => TRUE))
         )
       );
 
@@ -353,7 +339,6 @@ function _comment_notify_mailalert($comment) {
       if ($alert->uid != 0) {
         $watchdog_message = t('Notified: <a href="!url">@user_mail</a>',
           array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $mail)) ;
-
       }
       else {
         $watchdog_message = t('Notified @user_mail', array('@user_mail' => $mail));
@@ -364,13 +349,13 @@ function _comment_notify_mailalert($comment) {
         WATCHDOG_NOTICE, l(t('source comment'), 'node/'. $nid, NULL, NULL, 'comment-'. $alert->cid));
 
       // revert to previous (site default) locale
-      $locale = $initial_locale;
+      $language = $initial_language;
     }
   }
 }
 
 /**
- * Callback for a form to unsubscribe users.
+ * Callback for an administrative form to unsubscribe users by e-mail address.
  */
 function comment_notify_unsubscribe() {
   $form['comment_notify_unsubscribe'] = array();
@@ -386,10 +371,10 @@ function comment_notify_unsubscribe() {
 }
 
 /**
- * Actual unsubscribe of users.
+ * Based on admin submit, do the actual unsubscribe from notifications.
  */
-function comment_notify_unsubscribe_submit($form_id, $form_values) {
-  $email = trim($form_values['email_to_unsubscribe']);
+function comment_notify_unsubscribe_submit($form, &$form_state) {
+  $email = trim($form_state['values']['email_to_unsubscribe']);
   // If they have a uid, use that, otherwise update comments directly
   $result = db_result(db_query_range("SELECT uid FROM {users} WHERE mail = '%s'", $email, 0, 1));
   if ($result > 0) {
