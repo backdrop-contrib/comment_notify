@@ -271,7 +271,7 @@ function _comment_notify_mailalert($comment) {
   global $language;
   global $base_url;
 
-  $initial_locale = $language;
+  $initial_language = $language;
 
   if (function_exists('locale')) {
     $languages = locale_supported_languages();
@@ -289,7 +289,6 @@ function _comment_notify_mailalert($comment) {
     $comment_mail = $comment->mail;
   }
 
-  $from = variable_get('site_mail', ini_get('sendmail_from'));
   $result = db_query('SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail cmail, u.mail umail, u.init uinit, c.uid, c.name, cn.notify_hash mymd5
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
     WHERE nid = %d  AND cn.notify = 1 AND c.status = 0', $nid
@@ -304,19 +303,23 @@ function _comment_notify_mailalert($comment) {
     $mail = empty($alert->cmail) ? $umail : $alert->cmail;
 
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
-
-      if (function_exists('locale') && $languages[$user->language]) {
-        $language = $user->language;
+      $message = array();
+      if (!empty($alert->uid)) {
+        $recipient_user = user_load(array('uid' => $alert.uid));
+        $language = user_preferred_language($recipient_user);
+      }
+      else {
+        $language = language_default();
       }
 
-      $subject = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
-      $message = t(
+      $message['subject'] = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
+      $message['body'][] = drupal_html_to_text(t(
         variable_get('comment_notify_default_mailtext', DEFAULT_MAILTEXT),
         array(
           '!commname' => $comment->name,
           '!commtext' => $comment->comment,
           '!commsubj' => $comment->subject,
-          '!comment_url' => url('node/'. $nid, NULL, NULL, 1) .'#comment-'. $cid,
+          '!comment_url' => url('node/'. $nid, array('absolute' => TRUE)) .'#comment-'. $cid,
           '!node_title' =>  $node->title,
           '!node_teaser' => $node->teaser,
           '!mission' => variable_get('site_mission', ''),
@@ -330,9 +333,8 @@ function _comment_notify_mailalert($comment) {
           '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE)),
           '!link1' => url('comment_notify/disable/'. $alert->mymd5, array('absolute' => TRUE))
         )
-      );
-
-      drupal_mail('comment_notify_mail', $mail, $subject, $message, $from, array());
+      ));
+      drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
       $count++;
       $sent_to[] = $mail;
 
@@ -346,13 +348,19 @@ function _comment_notify_mailalert($comment) {
 
       // Add an entry to the watchdog log.
       watchdog('comment_notify', $watchdog_message,
-        WATCHDOG_NOTICE, l(t('source comment'), 'node/'. $nid, NULL, NULL, 'comment-'. $alert->cid));
+        WATCHDOG_NOTICE, l(t('source comment'), 'node/'. $nid, array('fragment' => 'comment-'. $alert->cid)));
 
       // revert to previous (site default) locale
       $language = $initial_language;
     }
   }
 }
+
+function comment_notify_mail($key, &$message, $params) {
+  $message['subject'] = $params['subject'];
+  $message['body'][] = $params['body'][0];
+}
+
 
 /**
  * Callback for an administrative form to unsubscribe users by e-mail address.
