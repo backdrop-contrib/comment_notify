@@ -274,7 +274,7 @@ function _comment_notify_mailalert($comment) {
   $initial_language = $language;
 
   if (function_exists('locale')) {
-    $languages = locale_supported_languages();
+    $languages = locale_language_list();
     $languages = $languages['name'];
   }
 
