@@ -269,7 +269,7 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
 
 /**
  * Private function to send the notifications.
- * 
+ *
  * @param $comment
  *   The comment array as found in hook_comment $op = publish.
  */
@@ -312,7 +312,7 @@ function _comment_notify_mailalert($comment) {
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
       $message = array();
       if (!empty($alert->uid)) {
-        $recipient_user = user_load(array('uid' => $alert.uid));
+        $recipient_user = user_load(array('uid' => $alert->uid));
         $language = user_preferred_language($recipient_user);
       }
       else {
@@ -334,7 +334,7 @@ function _comment_notify_mailalert($comment) {
           '!name' => $alert->name,
           '!site' => variable_get('site_name', 'drupal'),
           '!uri' => $base_url,
-          '!uri_brief' => substr($base_url, strlen('http://')),
+          '!uri_brief' => drupal_substr($base_url, drupal_strlen('http://')),
           '!date' => format_date(time()),
           '!login_uri' => url('user', array('absolute' => TRUE)),
           '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE)),
@@ -430,7 +430,7 @@ function comment_notify_settings() {
       }
     }
   }
-  
+
   if (!empty($anonymous_problems)) {
     drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact infromation on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))));
   }
