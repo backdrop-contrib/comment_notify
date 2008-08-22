@@ -298,7 +298,7 @@ function _comment_notify_mailalert($comment) {
 
   $result = db_query('SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail cmail, u.mail umail, u.init uinit, c.uid, c.name, cn.notify_hash mymd5
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
-    WHERE nid = %d  AND cn.notify = 1 AND c.status = 0', $nid
+    WHERE nid = %d  AND cn.notify = 1 AND c.status = 0 AND u.status = 1', $nid
   );
   // TODO? the original big query had stuff making sure the mail was populated and contained .+@.+ Perhaps check for that here and set notify = 0 if that is the case for this cid
 
