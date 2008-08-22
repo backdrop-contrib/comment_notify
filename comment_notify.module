@@ -229,6 +229,9 @@ function comment_notify_comment($comment, $op) {
       // And then save the data.
       db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $comment['notify'], md5($md5_string));
       break;
+    case 'delete':
+      db_query("DELETE FROM {comment_notify} WHERE cid = %d", $comment->cid);
+      break;
   }
 }
 

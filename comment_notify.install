@@ -48,3 +48,11 @@ function comment_notify_schema() {
   );
   return $schema;
 }
+
+/**
+ * Sync up the two tables after as part of http://drupal.org/node/297791
+ */
+function comment_notify_update_6000() {
+  $return[] = update_sql("DELETE FROM {comment_notify} WHERE cid NOT IN (SELECT cid FROM {comments})");
+  return $return;
+}
