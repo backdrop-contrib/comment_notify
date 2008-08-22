@@ -88,6 +88,10 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
 
   // Add the checkbox for anonymous users and set the default based on admin settings.
   if ($user->uid == 0) {
+    // If anonymous user's can't enter their e-mail don't tempt them with the checkbox
+    if (empty($form['mail'])) {
+      return;
+    }
     $form['notify'] = array(
       '#type' => 'checkbox',
       '#title' => t('Notify me of follow-up comments posted here.'),
@@ -413,9 +417,22 @@ function comment_notify_settings() {
   $form['comment_notify_settings'] = array();
 
   // Only perform comment_notify for certain node types (default, all)
+  $anonymous_problems = '';
   foreach (node_get_types('names') as $type => $name) {
     $checkboxes[$type] = check_plain($name);
     $default[] = $type;
+
+    // If they don't have the ability to leave contact info, then we make a report
+    if (variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
+      $account = user_load(array('uid' => 0));
+      if (user_access('Subscribe to comments', $account)) {
+        $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/'. $type);
+      }
+    }
+  }
+  
+  if (!empty($anonymous_problems)) {
+    drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact infromation on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))));
   }
 
   $form['comment_notify_settings']['comment_notify_node_types'] = array(
