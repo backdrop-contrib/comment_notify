@@ -200,7 +200,7 @@ function comment_notify_page() {
   }
 
   drupal_set_title($title);
-  print theme('page', $page_content);
+  return $page_content;
 }
 
 /**
