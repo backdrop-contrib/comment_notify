@@ -245,7 +245,7 @@ function comment_notify_comment($comment, $op) {
 function comment_notify_user($type, &$edit, &$user, $category = NULL) {
   switch ($type) {
     case 'form':
-      if ($category == 'account') {
+      if ($category == 'account' && user_access('Subscribe to comments', $user)) {
         $form = array();
         $form['comment_notify_settings'] = array(
           '#type' => 'fieldset',
