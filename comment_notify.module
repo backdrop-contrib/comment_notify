@@ -346,16 +346,16 @@ function _comment_notify_mailalert($comment) {
       $sent_to[] = $mail;
 
       if ($alert->uid != 0) {
-        $watchdog_message = t('Notified: <a href="!url">@user_mail</a>',
-          array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $mail)) ;
+        $watchdog_message = 'Notified: <a href="!url">@user_mail</a>';
       }
       else {
-        $watchdog_message = t('Notified @user_mail', array('@user_mail' => $mail));
+        $watchdog_message = 'Notified @user_mail';
       }
 
-      // Add an entry to the watchdog log.
-      watchdog('comment_notify', $watchdog_message,
+      watchdog('comment_notify', $watchdog_message, array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $mail),
         WATCHDOG_NOTICE, l(t('source comment'), 'node/'. $nid, array('fragment' => 'comment-'. $alert->cid)));
+
+      // Add an entry to the watchdog log.
 
       // revert to previous (site default) locale
       $language = $initial_language;
