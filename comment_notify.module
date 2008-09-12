@@ -320,7 +320,7 @@ function _comment_notify_mailalert($comment) {
       }
 
       $message['subject'] = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
-      $message['body'][] = drupal_html_to_text(t(
+      $message['body'] = t(
         variable_get('comment_notify_default_mailtext', DEFAULT_MAILTEXT),
         array(
           '!commname' => $comment->name,
@@ -340,7 +340,7 @@ function _comment_notify_mailalert($comment) {
           '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE)),
           '!link1' => url('comment_notify/disable/'. $alert->mymd5, array('absolute' => TRUE))
         )
-      ));
+      );
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
       $count++;
       $sent_to[] = $mail;
@@ -365,7 +365,7 @@ function _comment_notify_mailalert($comment) {
 
 function comment_notify_mail($key, &$message, $params) {
   $message['subject'] = $params['subject'];
-  $message['body'][] = $params['body'][0];
+  $message['body'][] = $params['body'];
 }
 
 
