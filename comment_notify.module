@@ -417,13 +417,14 @@ function comment_notify_settings() {
   $form['comment_notify_settings'] = array();
 
   // Only perform comment_notify for certain node types (default, all)
+  $enabled_types = variable_get('comment_notify_node_types', FALSE);
   $anonymous_problems = '';
   foreach (node_get_types('names') as $type => $name) {
     $checkboxes[$type] = check_plain($name);
     $default[] = $type;
 
     // If they don't have the ability to leave contact info, then we make a report
-    if (variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
+    if ($enabled_types[$type] && variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
       $account = user_load(array('uid' => 0));
       if (user_access('Subscribe to comments', $account)) {
         $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/'. $type);
