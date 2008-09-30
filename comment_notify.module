@@ -141,9 +141,9 @@ function comment_notify_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_notify_settings'),
     'access arguments' => array('Administer comment notify'),
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
   );
-  /*  $items['admin/settings/comment_notify/settings'] = array(
+  $items['admin/settings/comment_notify/settings'] = array(
     'title' => 'Settings',
     'description' => 'Configure settings for e-mails about new comments.',
     'page callback' => 'drupal_get_form',
@@ -151,7 +151,7 @@ function comment_notify_menu() {
     'access arguments' => array('Administer comment notify'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  */
+  
   $items['admin/settings/comment_notify/unsubscribe'] = array(
     'title' => 'Unsubscribe',
     'description' => 'Unsubscribe an email from all notifications.',
