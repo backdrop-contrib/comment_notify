@@ -34,6 +34,10 @@ Webmaster of !site
 !mission
 !uri');
 
+define('COMMENT_NOTIFY_DISABLED', 0);
+define('COMMENT_NOTIFY_NODE', 1);
+define('COMMENT_NOTIFY_COMMENT', 2);
+
 /**
  * Implementation of hook_help().
  */
@@ -254,10 +258,16 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
           '#collapsible' => TRUE
         );
 
+        // TODO make this a select
         $form['comment_notify_settings']['comment_notify_mailalert'] = array(
-          '#type' => 'checkbox',
+          '#type' => 'select',
           '#title' => t('Receive comment follow-up notification e-mails'),
           '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : 0,
+          '#options' => array(
+            COMMENT_NOTIFY_DISABLED => t('No notifications'),
+            COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
+            COMMENT_NOTIFY_COMMENT  => t('Just for replies to my comment')
+          ),
           '#description' => t("Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don't want follow-up mails anymore - i.e. for very popular posts.")
         );
         return $form;
@@ -296,9 +306,9 @@ function _comment_notify_mailalert($comment) {
     $comment_mail = $comment->mail;
   }
 
-  $result = db_query("SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init uinit, c.uid, c.name, cn.notify_hash mymd5
+  $result = db_query("SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init uinit, c.uid, c.name, cn.notify, cn.notify_hash mymd5
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
-    WHERE nid = %d  AND cn.notify = 1 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", $nid
+    WHERE nid = %d AND cn.notify > 0 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", $nid
   );
   // TODO? the original big query had stuff making sure the mail was populated and contained .+@.+ Perhaps check for that here and set notify = 0 if that is the case for this cid
 
@@ -308,6 +318,10 @@ function _comment_notify_mailalert($comment) {
   while ($alert = db_fetch_object($result)) {
     $umail = empty($alert->umail) ? $alert->uinit : $alert->umail;
     $mail = empty($alert->cmail) ? $umail : $alert->cmail;
+
+    if ($alert->notify == COMMENT_NOTIFY_COMMENT && $alert->cid != $comment->pid) {
+      break;
+    }
 
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
       $message = array();
@@ -393,11 +407,11 @@ function comment_notify_unsubscribe_submit($form, &$form_state) {
   // If they have a uid, use that, otherwise update comments directly
   $result = db_result(db_query_range("SELECT uid FROM {users} WHERE mail = '%s'", $email, 0, 1));
   if ($result > 0) {
-    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.uid = %d AND cn.notify = 1", $result));
+    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.uid = %d AND cn.notify > 0", $result));
     db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.uid = %d", $result);
   }
   else {
-    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.mail = '%s' AND cn.notify = 1", $email));
+    $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.mail = '%s' AND cn.notify > 0", $email));
     db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.mail = '%s'", $email);
   }
   // Update the admin about the state of this comment notification subscription.
@@ -453,8 +467,8 @@ function comment_notify_settings() {
   );
 
   $form['comment_notify_settings']['comment_notify_default_anon_mailalert'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Fill checkbox for follow-up with YES by default for anonymous users, so they will get an email alert for follow-up comments if they do not uncheck it then'),
+    '#type' => 'select',
+    '#title' => t('Default state for the notification selection box for anonymous users.'),
     '#return_value' => 1,
     '#default_value' => variable_get('comment_notify_default_anon_mailalert', TRUE),
     '#description' => t('This flag presets the flag for the follow-up notification on the form that anon users will see when posting a comment')
