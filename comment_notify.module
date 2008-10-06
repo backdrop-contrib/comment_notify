@@ -328,7 +328,7 @@ function _comment_notify_mailalert($comment) {
     $comment_mail = $comment->mail;
   }
   $sent_to = array();
-  $subject = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')))
+  $subject = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
 
   // Send to a subscribed author if they are not the current commenter
   $author = user_load(array('uid' => $node->uid));
