@@ -7,6 +7,21 @@
  * This module provides comment follow-up e-mail notification for anonymous and registered users.
  */
 
+
+define('AUTHOR_MAILTEXT',
+'Hi !name,
+
+You have received a comment on: "!node_title"
+
+You can view the comment at the following url
+!comment_url
+
+You will receive emails like this for all replies to your posts. You can disable this by logging in and going to your account settings.
+
+Webmaster of !site
+!mission
+!uri');
+
 define('DEFAULT_MAILTEXT',
 'Hi !name,
 
@@ -20,12 +35,12 @@ The post is about
 You can view the comment at the following url
 !comment_url
 
-You can stop receiving emails when someone replies to this blog post,
+You can stop receiving emails when someone replies to this post,
 by going to !link1
 
-If you have auto-blog-following enabled in your account, you will receive emails like this for all replies to a blog post you commented on. You can disable this by logging in and going to your account settings or unchecking the flag at the time you post the comment.
+If you have auto-following enabled in your account, you will receive emails like this for all replies to a blog post you commented on. You can disable this by logging in and going to your account settings or unchecking the flag at the time you post the comment.
 
-You can set up blog-following feature for all future posts
+You can set up auto-following feature for all future posts
 by creating your own user with a few clicks here !uri/user/register
 
 Thanks for your feedback,
@@ -258,11 +273,17 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
           '#collapsible' => TRUE
         );
 
-        // TODO make this a select
+        $form['comment_notify_settings']['node_notify_mailalert'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Receive node follow-up notification e-mails'),
+          '#default_value' => isset($edit['node_notify_mailalert']) ? $edit['node_notify_mailalert'] : FALSE,
+          '#description' => t('Check this box to receive an e-mail notification for follow-ups on your nodes (pages, forum topics, etc). You can not disable notifications for individual threads.')
+        );
+
         $form['comment_notify_settings']['comment_notify_mailalert'] = array(
           '#type' => 'select',
           '#title' => t('Receive comment follow-up notification e-mails'),
-          '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : 0,
+          '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : FALSE,
           '#options' => array(
             COMMENT_NOTIFY_DISABLED => t('No notifications'),
             COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
@@ -287,6 +308,7 @@ function _comment_notify_mailalert($comment) {
   $comment = (object) $comment;
   global $language;
   global $base_url;
+  global $user;
 
   $initial_language = $language;
 
@@ -305,15 +327,42 @@ function _comment_notify_mailalert($comment) {
   else {
     $comment_mail = $comment->mail;
   }
+  $sent_to = array();
+  $subject = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')))
 
+  // Send to a subscribed author if they are not the current commenter
+  $author = user_load(array('uid' => $node->uid));
+  if ($author->node_notify_mailalert == 1 && $user->mail != $author->mail) {
+    $message = t(
+      variable_get('node_notify_default_mailtext', AUTHOR_MAILTEXT),
+      array(
+        '!commname' => $commname,
+        '!commtext' => $commtext,
+        '!commsubj' => $commsubj,
+        '!comment_url' => url('node/'. $nid, NULL, NULL, 1) .'#comment-'. $cid,
+        '!node_title' =>  $node->title,
+        '!node_teaser' => $node->teaser,
+        '!mission' => variable_get('site_mission', ''),
+        '!node_body' =>  $node->body,
+        '!name' => $author->name,
+        '!site' => variable_get('site_name', 'drupal'),
+        '!uri' => $base_url,
+        '!uri_brief' => substr($base_url, strlen('http://')),
+        '!date' => format_date(time()),
+        '!login_uri' => url('user', NULL, NULL, 1),
+        '!edit_uri' => url('user/'. $alert->uid .'/edit', NULL, NULL, 1)
+      )
+    );
+    drupal_mail('node_notify_mail', $author->mail, $subject, $message, $from, array());
+    $sent_to[] = $author->mail;
+  }
+ 
+  //Get the list of commenters to notify
   $result = db_query("SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init uinit, c.uid, c.name, cn.notify, cn.notify_hash mymd5
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
     WHERE nid = %d AND cn.notify > 0 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", $nid
   );
   // TODO? the original big query had stuff making sure the mail was populated and contained .+@.+ Perhaps check for that here and set notify = 0 if that is the case for this cid
-
-  $count = 0;
-  $sent_to = array();
 
   while ($alert = db_fetch_object($result)) {
     $umail = empty($alert->umail) ? $alert->uinit : $alert->umail;
@@ -356,7 +405,6 @@ function _comment_notify_mailalert($comment) {
         )
       );
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
-      $count++;
       $sent_to[] = $mail;
 
       if ($alert->uid != 0) {
@@ -476,7 +524,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_default_mailtext'] = array(
     '#type' => 'textarea',
-    '#title' => t('Default mail text for sending out the notifications.'),
+    '#title' => t('Default mail text for sending out notifications to commenters.'),
     '#description' => t(
       'You can use the following variables to be replaced:
       <ul>
@@ -502,6 +550,35 @@ function comment_notify_settings() {
     '#return_value' => 1,
     '#cols' => 80,
     '#rows' => 15
+  );
+
+  $form['comment_notify_settings']['node_notify_default_mailtext'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Default mail text for sending out the notifications to node authors.'),
+    '#description' => t(
+      'You can use the following variables to be replaced:
+      <ul>
+      <li>!commname = the username who posted the comment
+      <li>!commtext = the text of the posted comment
+      <li>!commsubj = the subject of the posted comment
+      <li>!comment_url = the full url of the post and comment - note: if you have paging enabled, this does not work correct - set your max comments per page so that all fit on one page or reverse order them
+      <li>!node_title = the title of the node that was commented on
+      <li>!node_teaser = the teaser of the node that was commented on
+      <li>!node_body = the body of the node that was commented on
+      <li>!mission = site_mission text
+      <li>!name = username receiving the alert
+      <li>!site = your site
+      <li>!uri = base_url of site
+      <li>!uri_brief = base_url of site w/o http
+      <li>!date = the current time
+      <li>!login_uri  uri to login the user
+      <li>!edit_uri = uri to edit user profile
+      </ul>'
+    ),
+    '#default_value' => variable_get('node_notify_default_mailtext', t(AUTHOR_MAILTEXT)),
+     '#return_value' => 1,
+     '#cols' => 80,
+     '#rows' => 15
   );
 
   return system_settings_form($form);
