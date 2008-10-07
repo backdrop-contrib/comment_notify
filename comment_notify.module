@@ -246,11 +246,11 @@ function comment_notify_comment($comment, $op) {
       db_query($sql, $comment['notify'], $comment['cid']);
       break;
     case 'insert':
-      // For new comments, we first build up a string to be used s the md5 identifier for the alert
+      // For new comments, we first build up a string to be used as the identifier for the alert
       $mail = empty($comment['mail']) ? $user->mail : $comment['mail'];
-      $md5_string = $mail . $user->uid . $comment['name'] . $comment['nid'];
+      $notify_hash = drupal_get_token($mail . $comment['cid']);
       // And then save the data.
-      db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $comment['notify'], md5($md5_string));
+      db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $comment['notify'], $notify_hash);
       break;
     case 'delete':
       db_query("DELETE FROM {comment_notify} WHERE cid = %d", $comment->cid);
@@ -358,7 +358,7 @@ function _comment_notify_mailalert($comment) {
   }
  
   //Get the list of commenters to notify
-  $result = db_query("SELECT DISTINCT c.cid, u.init, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init uinit, c.uid, c.name, cn.notify, cn.notify_hash mymd5
+  $result = db_query("SELECT DISTINCT c.cid, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init AS uinit, c.uid, c.name, cn.notify, cn.notify_hash
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
     WHERE nid = %d AND cn.notify > 0 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", $nid
   );
@@ -401,7 +401,7 @@ function _comment_notify_mailalert($comment) {
           '!date' => format_date(time()),
           '!login_uri' => url('user', array('absolute' => TRUE)),
           '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE)),
-          '!link1' => url('comment_notify/disable/'. $alert->mymd5, array('absolute' => TRUE))
+          '!link1' => url('comment_notify/disable/'. $alert->notify_hash, array('absolute' => TRUE))
         )
       );
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
