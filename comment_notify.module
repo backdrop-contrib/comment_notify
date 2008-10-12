@@ -171,7 +171,7 @@ function comment_notify_perm() {
 function comment_notify_menu() {
 
   $items['admin/settings/comment_notify'] = array(
-    'title' => 'Comment Notify',
+    'title' => 'Comment notify',
     'description' => 'Configure settings for e-mails about new comments.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_notify_settings'),
@@ -230,7 +230,7 @@ function comment_notify_page() {
       $title = t('Disabled comment follow-up notification feature for this post.');
       break;
     default;
-      $title = t('Comment Notify');
+      $title = t('Comment notify');
       break;
   }
 
@@ -516,7 +516,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_node_types'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Content Types To Enable for Comment Notify'),
+    '#title' => t('Content Types To Enable for Comment notify'),
     '#default_value' => variable_get('comment_notify_node_types', $default),
     '#options' => $checkboxes,
     '#description' => t('Comments on content types enabled here will have the option of comment notification.'),
