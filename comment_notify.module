@@ -127,7 +127,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     }
     $form['notify'] = array(
       '#type' => 'select',
-      '#title' => t('Notify me of follow-up comments posted here.'),
+      '#title' => t('Notify me of follow-up comments posted here'),
       '#default_value' => variable_get('comment_notify_default_anon_mailalert', FALSE),
       '#options' => $available_options,
     );
