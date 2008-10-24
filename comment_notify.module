@@ -71,7 +71,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   global $user;
 
   // Only do alter the form if it's a comment form and the user has the permission to subscribe
-  if ($form_id != 'comment_form' || !user_access('Subscribe to comments')) {
+  if ($form_id != 'comment_form' || !user_access('subscribe to comments')) {
     return;
   }
 
@@ -139,7 +139,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
       '#title' => t('Notify me of follow-up comments posted here.'),
       '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_maila\
 lert', FALSE),
-      '#description' => t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>', array('!uri' => url('user/'. $user->uid .'/edit'))),
+      '#description' => t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>.', array('!uri' => url('user/'. $user->uid .'/edit'))),
       '#options' => $available_options,
     );
   }
@@ -162,7 +162,7 @@ lert', FALSE),
  * Implementation of hook_perm().
  */
 function comment_notify_perm() {
-  return array('Administer comment notify', 'Subscribe to comments');
+  return array('administer comment notify', 'subscribe to comments');
 }
 
 /**
@@ -175,7 +175,7 @@ function comment_notify_menu() {
     'description' => 'Configure settings for e-mails about new comments.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_notify_settings'),
-    'access arguments' => array('Administer comment notify'),
+    'access arguments' => array('administer comment notify'),
     'type' => MENU_NORMAL_ITEM,
   );
   $items['admin/settings/comment_notify/settings'] = array(
@@ -183,7 +183,7 @@ function comment_notify_menu() {
     'description' => 'Configure settings for e-mails about new comments.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_notify_settings'),
-    'access arguments' => array('Administer comment notify'),
+    'access arguments' => array('administer comment notify'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   
@@ -193,7 +193,7 @@ function comment_notify_menu() {
     'weight' => 2,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_notify_unsubscribe'),
-    'access arguments' => array('Administer comment notify'),
+    'access arguments' => array('administer comment notify'),
     'type' => MENU_LOCAL_TASK,
   );
   $items['comment_notify'] = array(
@@ -280,7 +280,7 @@ function comment_notify_comment($comment, $op) {
 function comment_notify_user($type, &$edit, &$user, $category = NULL) {
   switch ($type) {
     case 'form':
-      if ($category == 'account' && user_access('Subscribe to comments', $user)) {
+      if ($category == 'account' && user_access('subscribe to comments', $user)) {
         $form = array();
         $form['comment_notify_settings'] = array(
           '#type' => 'fieldset',
@@ -363,7 +363,7 @@ function _comment_notify_mailalert($comment) {
         '!name' => $author->name,
         '!site' => variable_get('site_name', 'drupal'),
         '!uri' => $base_url,
-        '!uri_brief' => substr($base_url, strlen('http://')),
+        '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
         '!date' => format_date(time()),
         '!login_uri' => url('user', NULL, NULL, 1),
         '!edit_uri' => url('user/'. $alert->uid .'/edit', NULL, NULL, 1)
@@ -413,7 +413,7 @@ function _comment_notify_mailalert($comment) {
           '!name' => $alert->name,
           '!site' => variable_get('site_name', 'drupal'),
           '!uri' => $base_url,
-          '!uri_brief' => drupal_substr($base_url, drupal_strlen('http://')),
+          '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
           '!date' => format_date(time()),
           '!login_uri' => url('user', array('absolute' => TRUE)),
           '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE)),
@@ -504,7 +504,7 @@ function comment_notify_settings() {
     // If they don't have the ability to leave contact info, then we make a report
     if ($enabled_types[$type] && variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
       $account = user_load(array('uid' => 0));
-      if (user_access('Subscribe to comments', $account)) {
+      if (user_access('subscribe to comments', $account)) {
         $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/'. $type);
       }
     }
@@ -516,7 +516,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_node_types'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Content Types To Enable for Comment notify'),
+    '#title' => t('Content types to enable for comment notification'),
     '#default_value' => variable_get('comment_notify_node_types', $default),
     '#options' => $checkboxes,
     '#description' => t('Comments on content types enabled here will have the option of comment notification.'),
@@ -532,10 +532,10 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_available_alerts'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Available subscription modes.'),
+    '#title' => t('Available subscription modes'),
     '#return_value' => 1,
     '#default_value' => variable_get('comment_notify_available_alerts', TRUE),
-    '#description' => t('Choose which notification subscription styles are available for users.'),
+    '#description' => t('Choose which notification subscription styles are available for users'),
     '#options' => array(
       COMMENT_NOTIFY_NODE     => t('For all comments on a post'),
       COMMENT_NOTIFY_COMMENT  => t('Just for replies to a comment')
@@ -544,10 +544,9 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_default_anon_mailalert'] = array(
     '#type' => 'select',
-    '#title' => t('Default state for the notification selection box for anonymous users.'),
+    '#title' => t('Default state for the notification selection box for anonymous users'),
     '#return_value' => 1,
     '#default_value' => variable_get('comment_notify_default_anon_mailalert', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)),
-    '#description' => t('This flag presets the flag for the follow-up notification on the form that anon users will see when posting a comment'),
     '#options' => array(
       COMMENT_NOTIFY_DISABLED => t('No notifications'),
       COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
@@ -557,7 +556,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_default_mailtext'] = array(
     '#type' => 'textarea',
-    '#title' => t('Default mail text for sending out notifications to commenters.'),
+    '#title' => t('Default mail text for sending out notifications to commenters'),
     '#description' => t(
       'You can use the following variables to be replaced:
       <ul>
@@ -587,7 +586,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['node_notify_default_mailtext'] = array(
     '#type' => 'textarea',
-    '#title' => t('Default mail text for sending out the notifications to node authors.'),
+    '#title' => t('Default mail text for sending out the notifications to node authors"'),
     '#description' => t(
       'You can use the following variables to be replaced:
       <ul>
