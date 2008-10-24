@@ -586,7 +586,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['node_notify_default_mailtext'] = array(
     '#type' => 'textarea',
-    '#title' => t('Default mail text for sending out the notifications to node authors"'),
+    '#title' => t('Default mail text for sending out the notifications to node authors'),
     '#description' => t(
       'You can use the following variables to be replaced:
       <ul>
