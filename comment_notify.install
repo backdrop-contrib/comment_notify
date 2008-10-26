@@ -1,5 +1,9 @@
 <?php
 // $Id$
+/**
+ * @file
+ * comment_notify.install.
+ */
 
 /**
  * Implementation of hook_install().
@@ -10,16 +14,23 @@ function comment_notify_install() {
 
   // Insert a record for each existing comment.
   db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) SELECT c.cid, 0, md5(concat(c.mail, ifnull(u.mail, u.init), c.uid, c.name, c.nid)) FROM {comments} c LEFT OUTER JOIN {users} u on c.uid = u.uid");
-  
-   // Set module weight low so that other modules act on the comment first.
+
+  // Set module weight low so that other modules act on the comment first.
   db_query("UPDATE {system} SET weight = 10 WHERE name = 'comment_notify'");
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function comment_notify_uninstall() {
   drupal_uninstall_schema('comment_notify');
-  // TODO cleanup variables
+  variable_del('node_notify_default_mailtext');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'comment_notify_%'");
 }
 
+/**
+ * Implementation of hook_schema().
+ */
 function comment_notify_schema() {
   $schema['comment_notify'] = array(
     'description' => t('Stores information about which commenters on the site have subscriped to followup emails.'),
