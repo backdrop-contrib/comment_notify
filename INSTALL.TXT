@@ -18,3 +18,12 @@ http://example.com/admin/user/permissions#module-comment_notify
   -Determine which content types to activate it for
   -Determine which subscription modes are allowed
   -Configure the templates for the e-mails
+  
+OPTIONAL MODULES
+----------------
+
+Performance: If you notice that your site is very slow when submiting
+new comments it is possible that the problem is with sending the mails. 
+One option is to use the Queue Mail module
+http://drupal.org/project/queue_mail
+
