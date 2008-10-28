@@ -22,7 +22,7 @@ http://example.com/admin/user/permissions#module-comment_notify
 OPTIONAL MODULES
 ----------------
 
-Performance: If you notice that your site is very slow when submiting
+Performance: If you notice that your site is very slow when submitting
 new comments it is possible that the problem is with sending the mails. 
 One option is to use the Queue Mail module
 http://drupal.org/project/queue_mail
