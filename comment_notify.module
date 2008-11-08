@@ -367,7 +367,7 @@ function _comment_notify_mailalert($comment) {
         '!uri' => $base_url,
         '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
         '!date' => format_date(time()),
-        '!login_uri' => url('user', array('ablsolute' => TRUE)),
+        '!login_uri' => url('user', array('absolute' => TRUE)),
         '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE))
       )
     );
