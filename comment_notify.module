@@ -82,29 +82,6 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
-  // If this is a POST then it is a preview and we remind people that there post isn't done yet.
-  $op = isset($_POST['op']) ? $_POST['op'] : '';
-
-  if ($op == t('Preview comment')) {
-    drupal_set_message(t('ATTENTION: Your comment is NOT YET posted - please click the post button to confirm your post'));
-
-    //extra submit button on top
-    if (!form_get_errors() && ((variable_get('comment_preview', COMMENT_PREVIEW_REQUIRED) == COMMENT_PREVIEW_OPTIONAL) || ($op == t('Preview comment')) || ($op == t('Post comment')))) {
-      $form['submitextra'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Comment is not posted yet - please click post button to confirm your post'),
-        '#weight' => -99,
-        '#collapsible' => FALSE
-      );
-
-      $form['submitextra']['submit'] = array(
-        '#type' => 'submit',
-        '#value' => t('Post comment'),
-        '#weight' => -20
-      );
-    }
-  }
-
   $total_options = array(
     COMMENT_NOTIFY_DISABLED => t('No notifications'),
     COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
