@@ -7,7 +7,6 @@
  * This module provides comment follow-up e-mail notification for anonymous and registered users.
  */
 
-
 define('AUTHOR_MAILTEXT',
 'Hi !name,
 
@@ -115,7 +114,6 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'select',
       '#title' => t('Notify me of follow-up comments posted here.'),
       '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED),
-      '#description' => t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>.', array('!uri' => url('user/'. $user->uid .'/edit'))),
       '#options' => $available_options,
     );
   }
@@ -238,6 +236,11 @@ function comment_notify_comment($comment, $op) {
       db_query($sql, $comment['notify'], $comment['cid']);
       break;
     case 'insert':
+      // If they subscribe and don't have a default let them know that it's possible to set one.
+      if (empty($user->comment_notify_mailalert) && $comment['notify']) {
+        drupal_set_message(t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>.', array('!uri' => url('user/'. $user->uid .'/edit'))));
+      }
+
       // For new comments, we first build up a string to be used as the identifier for the alert
       $mail = empty($comment['mail']) ? $user->mail : $comment['mail'];
       $notify_hash = drupal_get_token($mail . $comment['cid']);
@@ -323,7 +326,7 @@ function _comment_notify_mailalert($comment) {
 
   // Send to a subscribed author if they are not the current commenter
   $author = user_load(array('uid' => $node->uid));
-  if ($author->node_notify_mailalert == 1 && $user->mail != $author->mail) {
+  if (!empty($author->node_notify_mailalert) && $author->node_notify_mailalert == 1 && $user->mail != $author->mail) {
     // Get the author's language.
     $language = user_preferred_language($author);
     $message['subject'] = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
