@@ -128,7 +128,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     $form['notify'] = array(
       '#type' => 'select',
       '#title' => t('Notify me of follow-up comments posted here'),
-      '#default_value' => variable_get('comment_notify_default_anon_mailalert', FALSE),
+      '#default_value' => variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_DISABLED),
       '#options' => $available_options,
     );
   }
@@ -137,8 +137,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     $form['notify'] = array(
       '#type' => 'select',
       '#title' => t('Notify me of follow-up comments posted here.'),
-      '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_anon_maila\
-lert', FALSE),
+      '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED),
       '#description' => t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>.', array('!uri' => url('user/'. $user->uid .'/edit'))),
       '#options' => $available_options,
     );
@@ -186,7 +185,7 @@ function comment_notify_menu() {
     'access arguments' => array('administer comment notify'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  
+
   $items['admin/settings/comment_notify/unsubscribe'] = array(
     'title' => 'Unsubscribe',
     'description' => 'Unsubscribe an email from all notifications.',
@@ -299,7 +298,7 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
         $form['comment_notify_settings']['comment_notify_mailalert'] = array(
           '#type' => 'select',
           '#title' => t('Receive comment follow-up notification e-mails'),
-          '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : FALSE,
+          '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_DISABLED),
           '#options' => array(
             COMMENT_NOTIFY_DISABLED => t('No notifications'),
             COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
@@ -374,7 +373,7 @@ function _comment_notify_mailalert($comment) {
     drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
     $sent_to[] = $author->mail;
   }
- 
+
   //Get the list of commenters to notify
   $result = db_query("SELECT DISTINCT c.cid, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init AS uinit, c.uid, c.name, cn.notify, cn.notify_hash
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
@@ -536,7 +535,7 @@ function comment_notify_settings() {
     '#type' => 'checkboxes',
     '#title' => t('Available subscription modes'),
     '#return_value' => 1,
-    '#default_value' => variable_get('comment_notify_available_alerts', TRUE),
+    '#default_value' => variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)),
     '#description' => t('Choose which notification subscription styles are available for users'),
     '#options' => array(
       COMMENT_NOTIFY_NODE     => t('For all comments on a post'),
@@ -544,17 +543,29 @@ function comment_notify_settings() {
     )
   );
 
+  $available_options = array(
+      COMMENT_NOTIFY_DISABLED => t('No notifications'),
+      COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
+      COMMENT_NOTIFY_COMMENT  => t('Just for replies to my comment')
+    );
+
   $form['comment_notify_settings']['comment_notify_default_anon_mailalert'] = array(
     '#type' => 'select',
     '#title' => t('Default state for the notification selection box for anonymous users'),
     '#return_value' => 1,
-    '#default_value' => variable_get('comment_notify_default_anon_mailalert', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)),
-    '#options' => array(
-      COMMENT_NOTIFY_DISABLED => t('No notifications'),
-      COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
-      COMMENT_NOTIFY_COMMENT  => t('Just for replies to my comment')
-    )
+    '#default_value' => variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_NODE),
+    '#options' => $available_options,
   );
+
+  $form['comment_notify_settings']['comment_notify_default_registered_mailalert'] = array(
+    '#type' => 'select',
+    '#title' => t('Default state for the notification selection box for registered users.'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_NODE),
+    '#description' => t('This flag presets the flag for the follow-up notification on the form that anon users will see when posting a comment'),
+    '#options' => $available_options,
+  );
+
 
   $form['comment_notify_settings']['comment_notify_default_mailtext'] = array(
     '#type' => 'textarea',
