@@ -67,3 +67,24 @@ function comment_notify_update_6000() {
   $return[] = update_sql("DELETE FROM {comment_notify} WHERE cid NOT IN (SELECT cid FROM {comments})");
   return $return;
 }
+
+/**
+ * Permissions got renamed, update them.
+ */
+function comment_notify_update_6001() {
+  $ret = array();
+  $result = db_query("SELECT pid, perm FROM {permission}");
+  while ($row = db_fetch_object($result)) {
+    $permissions = explode(', ', $row->perm);
+    if (in_array('Subscribe to comments', $permissions) && !in_array('subscribe to comments', $permissions)) {
+      $permissions[] = 'create gmap macro';
+    }
+    if (in_array('Administer comment notify', $permissions) && !in_array('administer comment notify', $permissions)) {
+      $permissions[] = 'create gmap macro';
+    }
+
+    $permissions = implode(', ', $permissions);
+    db_query("UPDATE {permission} SET perm = '%s' WHERE pid = %d", $permissions, $row->pid);
+  }
+  return $ret;
+}
