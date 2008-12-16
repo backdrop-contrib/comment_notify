@@ -198,7 +198,7 @@ function comment_notify_page() {
   switch ($op) {
     case 'disable':
       $key = $arg;
-      db_query("UPDATE {comment_notify} c SET c.notify = 0 WHERE notify_hash = '%s'", $arg);
+      db_query("UPDATE {comment_notify} SET notify = 0 WHERE notify_hash = '%s'", $arg);
 
       drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
       $title = t('Disabled comment follow-up notification feature for this post.');
