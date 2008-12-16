@@ -108,23 +108,14 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
       '#options' => $available_options,
     );
   }
-  // For registered users and the admin wants them to see the checkbox.
-  elseif (variable_get('comment_notify_regged_checkbox', TRUE)) {
-    $form['notify'] = array(
-      '#type' => 'select',
-      '#title' => t('Notify me of follow-up comments posted here.'),
-      '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED),
-      '#options' => $available_options,
-    );
-  }
-  // For the registered users where the admin wants the checkbox hidden.
-  else {
-    $form['notify'] = array(
-      '#type' => 'hidden',
-      '#title' => t('Mail me updates to this comment.'),
-      '#default_value' => $user->comment_notify_mailalert,
-    );
-  }
+  // Always show the checkbox for registered users.
+  // If you want to hide this on your site see http://drupal.org/node/322482
+  $form['notify'] = array(
+    '#type' => 'select',
+    '#title' => t('Notify me of follow-up comments posted here.'),
+    '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED),
+    '#options' => $available_options,
+  );
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
     $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
@@ -501,14 +492,6 @@ function comment_notify_settings() {
     '#default_value' => variable_get('comment_notify_node_types', $default),
     '#options' => $checkboxes,
     '#description' => t('Comments on content types enabled here will have the option of comment notification.'),
-  );
-
-  $form['comment_notify_settings']['comment_notify_regged_checkbox'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Let registered users select notification on a node basis'),
-    '#return_value' => 1,
-    '#default_value' => variable_get('comment_notify_regged_checkbox', TRUE),
-    '#description' => t('letting registered users select/unselect if they want to be notified. If this is disabled, this setting is propagated from their user profile, hence reducing and clutter and confusion')
   );
 
   $form['comment_notify_settings']['comment_notify_available_alerts'] = array(
