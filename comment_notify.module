@@ -91,7 +91,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   $options[] = COMMENT_NOTIFY_DISABLED;
   $options = array_merge($options, variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)));
 
-  foreach($options as $available) {
+  foreach ($options as $available) {
     $available_options[$available] = $total_options[$available];
   }
 
@@ -444,11 +444,11 @@ function comment_notify_unsubscribe_submit($form, &$form_state) {
   $result = db_result(db_query_range("SELECT uid FROM {users} WHERE mail = '%s'", $email, 0, 1));
   if ($result > 0) {
     $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.uid = %d AND cn.notify > 0", $result));
-    db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.uid = %d", $result);
+    db_query("UPDATE {comment_notify} SET notify = 0 WHERE cid IN (SELECT cid FROM  {comments} WHERE uid = %d)", $result);
   }
   else {
     $comments = db_result(db_query("SELECT COUNT(1) FROM {comments} c INNER JOIN {comment_notify} cn ON c.cid = cn.cid WHERE c.mail = '%s' AND cn.notify > 0", $email));
-    db_query("UPDATE {comment_notify} cn INNER JOIN {comments} c ON cn.cid = c.cid SET cn.notify = 0 WHERE c.mail = '%s'", $email);
+    db_query("UPDATE {comment_notify} SET notify = 0 WHERE cid IN (SELECT cid FROM {comments} WHERE mail = '%s')", $email);
   }
   // Update the admin about the state of this comment notification subscription.
   if ($comments == 0) {
