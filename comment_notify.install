@@ -82,10 +82,10 @@ function comment_notify_update_6001() {
   while ($row = db_fetch_object($result)) {
     $permissions = explode(', ', $row->perm);
     if (in_array('Subscribe to comments', $permissions) && !in_array('subscribe to comments', $permissions)) {
-      $permissions[] = 'create gmap macro';
+      $permissions[] = 'subscribe to comments';
     }
     if (in_array('Administer comment notify', $permissions) && !in_array('administer comment notify', $permissions)) {
-      $permissions[] = 'create gmap macro';
+      $permissions[] = 'administer comment notify';
     }
 
     $permissions = implode(', ', $permissions);
