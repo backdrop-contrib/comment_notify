@@ -93,3 +93,16 @@ function comment_notify_update_6001() {
   }
   return $ret;
 }
+
+/**
+ * Drop the notify column from the {comments} table.  This column will only exist
+ * if the 5.x-1.x version of comment_notify was installed at some point.  Since
+ * the 5.x-2.x version of the module {comment_notify}.notify has been used instead.
+ */
+function comment_notify_update_6002() {
+  $ret = array();
+  if (db_column_exists('comments', 'notify')) {
+    db_drop_field($ret, 'comments', 'notify');
+  }
+  return $ret;
+}
