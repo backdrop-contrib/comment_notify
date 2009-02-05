@@ -395,17 +395,24 @@ function _comment_notify_mailalert($comment) {
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
       $sent_to[] = $mail;
 
+      // Make the mail link to user's /edit, unless it's an anonymous user.
       if ($alert->uid != 0) {
-        $watchdog_message = 'Notified: <a href="!url">@user_mail</a>';
+        $user_mail = l($mail, 'user/'. $alert->uid .'/edit');
       }
       else {
-        $watchdog_message = 'Notified @user_mail';
+        $user_mail = check_plain($mail);
       }
 
-      watchdog('comment_notify', $watchdog_message, array('!url' => url('user/'. $alert->uid .'/edit'), '@user_mail' => $mail),
-        WATCHDOG_NOTICE, l(t('source comment'), 'node/'. $nid, array('fragment' => 'comment-'. $alert->cid)));
-
       // Add an entry to the watchdog log.
+      watchdog(
+        'comment_notify',
+        'Notified: !user_mail',
+        array('!user_mail' => $user_mail),
+        WATCHDOG_NOTICE,
+        l(t('source comment'), 'node/'. $nid, array(
+          'fragment' => 'comment-'. $alert->cid,
+        ))
+      );
 
       // revert to previous (site default) locale
       $language = $initial_language;
