@@ -112,7 +112,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   // If you want to hide this on your site see http://drupal.org/node/322482
   $form['notify'] = array(
     '#type' => 'select',
-    '#title' => t('Notify me of follow-up comments posted here.'),
+    '#title' => t('Notify me of follow-up comments posted here'),
     '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED),
     '#options' => $available_options,
   );
