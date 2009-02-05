@@ -474,7 +474,7 @@ function comment_notify_settings() {
     $default[] = $type;
 
     // If they don't have the ability to leave contact info, then we make a report
-    if ($enabled_types[$type] && variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
+    if (isset($enabled_types[$type]) && $enabled_types[$type] && variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
       $account = user_load(array('uid' => 0));
       if (user_access('subscribe to comments', $account)) {
         $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/'. $type);
