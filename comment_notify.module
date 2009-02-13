@@ -81,46 +81,60 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
+  drupal_add_css(drupal_get_path('module', 'comment_notify') .'/comment_notify.css');
+  drupal_add_js(drupal_get_path('module', 'comment_notify') .'/comment_notify.js');
+
   $total_options = array(
-    COMMENT_NOTIFY_DISABLED => t('No notifications'),
-    COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
-    COMMENT_NOTIFY_COMMENT  => t('Just for replies to my comment')
+    COMMENT_NOTIFY_NODE     => t('All comments'),
+    COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
   );
-
-  // Always allow disabled
-  $options[] = COMMENT_NOTIFY_DISABLED;
-  $options = array_merge($options, variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)));
-
-  foreach ($options as $available) {
-    $available_options[$available] = $total_options[$available];
+  $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT));
+  foreach ($options as $key => $available) {
+    if ($key = $available) {
+      $available_options[$available] = $total_options[$available];
+    }
+  }
+  if (count($available_options) > 1) {
+    $options_type = 'radios';
+  }
+  else {
+    $options_type = 'hidden';
   }
 
   // Add the checkbox for anonymous users and set the default based on admin settings.
   if ($user->uid == 0) {
-    // If anonymous user's can't enter their e-mail don't tempt them with the checkbox
+    // If anonymous user's can't enter their e-mail don't tempt them with the checkbox.
     if (empty($form['mail'])) {
       return;
     }
-    $form['notify'] = array(
-      '#type' => 'select',
-      '#title' => t('Notify me of follow-up comments posted here'),
-      '#default_value' => variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_DISABLED),
-      '#options' => $available_options,
-    );
+    $preference = variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_DISABLED);
   }
-  // Always show the checkbox for registered users.
+  else {
+    $user_preference = db_result(db_query("SELECT comment_notify FROM {comment_notify_user_settings} WHERE uid = %d", $user->uid));
+    $preference = !empty($user_preference) ? $user_preference : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED);
+  }
+
   // If you want to hide this on your site see http://drupal.org/node/322482
   $form['notify'] = array(
-    '#type' => 'select',
-    '#title' => t('Notify me of follow-up comments posted here'),
-    '#default_value' => !empty($user->comment_notify_mailalert) ? $user->comment_notify_mailalert : variable_get('comment_notify_default_regged_mailalert', COMMENT_NOTIFY_DISABLED),
+    '#type' => 'checkbox',
+    '#title' => t('Notify me when new comments are posted'),
+    '#default_value' => $preference,
+  );
+
+  $form['notify_type'] = array(
+    '#type' => $options_type,
+    '#default_value' => $preference,
     '#options' => $available_options,
   );
+
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
     $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
     $form['notify']['#default_value'] = $notify;
+    $form['notify_type']['#default_value'] = $notify;
   }
+  // TODO: I wish this didn't have to be here, but I can't figure out what makes it better.  Patches welcome.
+  $form['notify_clearit'] = array('#value' => '<br id="notify_clear">', '#weight' => 9);
 }
 
 /**
@@ -224,19 +238,31 @@ function comment_notify_comment($comment, $op) {
     case 'update':
       // In case they have changed their status, save it in the database.
       $sql = 'UPDATE {comment_notify} SET notify = %d WHERE cid = %d';
-      db_query($sql, $comment['notify'], $comment['cid']);
+      if ($comment['notify']) {
+        db_query($sql, $comment['notify_type'], $comment['cid']);
+      }
+      else {
+        db_query($sql, 0, $comment['cid']);
+      }
       break;
     case 'insert':
-      // If they subscribe and don't have a default let them know that it's possible to set one.
-      if (empty($user->comment_notify_mailalert) && $comment['notify']) {
-        drupal_set_message(t('You can change the default for this field in "Comment follow-up notification settings" on <a href="!uri">your account edit page</a>.', array('!uri' => url('user/'. $user->uid .'/edit'))));
-      }
-
       // For new comments, we first build up a string to be used as the identifier for the alert
       $mail = empty($comment['mail']) ? $user->mail : $comment['mail'];
       $notify_hash = drupal_get_token($mail . $comment['cid']);
+
+      if ($comment['notify']) {
+        $notify = $comment['notify_type'];
+        $current = db_result(db_query("SELECT count(1) from {comment_notify_user_settings} WHERE uid = %d", $user->uid));
+        if ($current == 0) {
+          db_query("INSERT INTO {comment_notify_user_settings} (uid, comment_notify) VALUES (%d, %d)", $user->uid, $comment['notify_type']);
+        }
+      }
+      else {
+        $notify = $comment['notify'];
+      }
       // And then save the data.
-      db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $comment['notify'], $notify_hash);
+      db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $notify, $notify_hash);
+
       break;
     case 'delete':
       db_query("DELETE FROM {comment_notify} WHERE cid = %d", $comment->cid);
@@ -272,8 +298,8 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
           '#default_value' => isset($edit['comment_notify_mailalert']) ? $edit['comment_notify_mailalert'] : variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_DISABLED),
           '#options' => array(
             COMMENT_NOTIFY_DISABLED => t('No notifications'),
-            COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
-            COMMENT_NOTIFY_COMMENT  => t('Just for replies to my comment')
+            COMMENT_NOTIFY_NODE     => t('All comments'),
+            COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
           ),
           '#description' => t("Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don't want follow-up mails anymore - i.e. for very popular posts.")
         );
@@ -298,8 +324,10 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
 
     case 'load':
       $user_settings = db_fetch_array(db_query('SELECT node_notify AS node_notify_mailalert, comment_notify AS comment_notify_mailalert FROM {comment_notify_user_settings} WHERE uid = %d', $user->uid));
-      foreach ($user_settings as $property => $value) {
-        $user->$property = $value;
+      if (!empty($user_settings)) {
+        foreach ($user_settings as $property => $value) {
+          $user->$property = $value;
+        }
       }
       break;
 
@@ -535,15 +563,15 @@ function comment_notify_settings() {
     '#default_value' => variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)),
     '#description' => t('Choose which notification subscription styles are available for users'),
     '#options' => array(
-      COMMENT_NOTIFY_NODE     => t('For all comments on a post'),
-      COMMENT_NOTIFY_COMMENT  => t('Just for replies to a comment')
+      COMMENT_NOTIFY_NODE     => t('All comments'),
+      COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
     )
   );
 
   $available_options = array(
       COMMENT_NOTIFY_DISABLED => t('No notifications'),
-      COMMENT_NOTIFY_NODE     => t('For all comments on this post'),
-      COMMENT_NOTIFY_COMMENT  => t('Just for replies to my comment')
+      COMMENT_NOTIFY_NODE     => t('All comments'),
+      COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
     );
 
   $form['comment_notify_settings']['comment_notify_default_anon_mailalert'] = array(
@@ -623,5 +651,17 @@ function comment_notify_settings() {
      '#rows' => 15
   );
 
+  $form['#validate'] = array('comment_notify_settings_validate');
+
   return system_settings_form($form);
+}
+
+function comment_notify_settings_validate($form, &$form_state) {
+  $sum_enabled = 0;
+  foreach ($form_state['values']['comment_notify_available_alerts'] as $enabled) {
+    $sum_enabled += $enabled;
+  }
+  if (!$sum_enabled) {
+    form_set_error('comment_notify_available_alerts', 'You must enable at least one subscription mode.');
+  }
 }
