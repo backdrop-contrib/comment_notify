@@ -279,6 +279,33 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
         );
         return $form;
       }
+      break;
+
+    case 'submit':
+      // Save the values of node_notify_mailalert and comment_notify_mailalert
+      // to {comment_notify_user_settings}.
+      if (db_result(db_query('SELECT uid FROM {comment_notify_user_settings} WHERE uid = %d', $user->uid))) {
+        db_query('UPDATE {comment_notify_user_settings} SET node_notify = %d, comment_notify = %d WHERE uid = %d', $edit['node_notify_mailalert'], $edit['comment_notify_mailalert'], $user->uid);
+      }
+      else {
+        db_query('INSERT INTO {comment_notify_user_settings} (uid, node_notify, comment_notify) VALUES (%d, %d, %d)', $user->uid, $edit['node_notify_mailalert'], $edit['comment_notify_mailalert']);
+      }
+
+      // Unset them from $user so they don't also get saved into {users}.data.
+      unset($edit['node_notify_mailalert']);
+      unset($edit['comment_notify_mailalert']);
+      break;
+
+    case 'load':
+      $user_settings = db_fetch_array(db_query('SELECT node_notify AS node_notify_mailalert, comment_notify AS comment_notify_mailalert FROM {comment_notify_user_settings} WHERE uid = %d', $user->uid));
+      foreach ($user_settings as $property => $value) {
+        $user->$property = $value;
+      }
+      break;
+
+    case 'delete':
+      db_query('DELETE FROM {comment_notify_user_settings} WHERE uid = %d', $user->uid);
+      break;
 
       break;
   }
