@@ -90,15 +90,9 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   );
   $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT));
   foreach ($options as $key => $available) {
-    if ($key = $available) {
+    if ($key == $available) {
       $available_options[$available] = $total_options[$available];
     }
-  }
-  if (count($available_options) > 1) {
-    $options_type = 'radios';
-  }
-  else {
-    $options_type = 'hidden';
   }
 
   // Add the checkbox for anonymous users and set the default based on admin settings.
@@ -121,11 +115,18 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     '#default_value' => $preference,
   );
 
-  $form['notify_type'] = array(
-    '#type' => $options_type,
-    '#default_value' => $preference,
-    '#options' => $available_options,
-  );
+  if (count($available_options) > 1) {
+    $form['notify_type'] = array(
+      '#type' => 'radios',
+      '#options' => $available_options,
+    );
+  }
+  else {
+    $form['notify_type'] = array(
+      '#type' => 'hidden',
+    );
+  }
+  $form['notify_type']['#default_value'] = $preference;
 
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
