@@ -352,6 +352,16 @@ function _comment_notify_mailalert($comment) {
   global $base_url;
   global $user;
 
+  $nid = $comment->nid;
+  $cid = $comment->cid;
+
+  // Check to see if a notification has already been sent for this
+  // comment so that edits to a comment don't trigger an additional
+  // notification.
+  if (db_result(db_query('SELECT cid from {comment_notify} WHERE cid = %d AND notified = %d', $cid, 1))) {
+    return;
+  }
+
   $initial_language = $language;
 
   if (function_exists('locale')) {
@@ -359,8 +369,6 @@ function _comment_notify_mailalert($comment) {
     $languages = $languages['name'];
   }
 
-  $nid = $comment->nid;
-  $cid = $comment->cid;
   $node = node_load($nid);
   if (!isset($comment->mail)) {
     $comment_account = user_load(array('name' => $comment->name));
@@ -413,9 +421,8 @@ function _comment_notify_mailalert($comment) {
     $mail = empty($alert->cmail) ? $umail : $alert->cmail;
 
     if ($alert->notify == COMMENT_NOTIFY_COMMENT && $alert->cid != $comment->pid) {
-      break;
+      continue;
     }
-
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
       $message = array();
       if (!empty($alert->uid)) {
@@ -474,6 +481,9 @@ function _comment_notify_mailalert($comment) {
       $language = $initial_language;
     }
   }
+  // Record that a notification was sent for this comment so that
+  // notifications aren't sent again if the comment is later edited.
+  db_query('UPDATE {comment_notify} SET notified = 1 WHERE cid = %d', $cid);
 }
 
 function comment_notify_mail($key, &$message, $params) {
