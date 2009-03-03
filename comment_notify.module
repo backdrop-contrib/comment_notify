@@ -232,10 +232,6 @@ function comment_notify_comment($comment, $op) {
         form_set_error('mail', t('If you want to subscribe to comments you must supply a valid e-mail address.'));
       }
       break;
-    case 'publish':
-      // The real meat of the module.
-      _comment_notify_mailalert($comment);
-      break;
     case 'update':
       // In case they have changed their status, save it in the database.
       $sql = 'UPDATE {comment_notify} SET notify = %d WHERE cid = %d';
@@ -244,6 +240,10 @@ function comment_notify_comment($comment, $op) {
       }
       else {
         db_query($sql, 0, $comment['cid']);
+      }
+      // And send notifications - the real purpose of the module.
+      if ($comment['status'] == COMMENT_PUBLISHED) {
+        _comment_notify_mailalert($comment);
       }
       break;
     case 'insert':
@@ -264,6 +264,10 @@ function comment_notify_comment($comment, $op) {
       // And then save the data.
       db_query("INSERT INTO {comment_notify} (cid, notify, notify_hash) values (%d, %d, '%s')", $comment['cid'], $notify, $notify_hash);
 
+      // And send notifications - the real purpose of the module.
+      if ($comment['status'] == COMMENT_PUBLISHED) {
+        _comment_notify_mailalert($comment);
+      }
       break;
     case 'delete':
       db_query("DELETE FROM {comment_notify} WHERE cid = %d", $comment->cid);
