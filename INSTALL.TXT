@@ -27,3 +27,16 @@ new comments it is possible that the problem is with sending the mails.
 One option is to use the Queue Mail module
 http://drupal.org/project/queue_mail
 
+COMPATIBILITY NOTE
+------------------------ 
+Comment Notify is not built to work
+on sites where other mail related modules are installed (modules like Actions,
+Notify, Subscriptions, and Organic Groups are popular examples). If you install
+both Comment Notify and one of these other mail modules on your site in addition
+to Comment Notify it may send duplicate messages and/or have user interface
+elements that will appear to be duplicates and confuse your site visitors.
+
+The suggested configuration in these instances is to separate Comment Notify and
+whatever other mail module you have installed. Common ways to separate them are
+by content type or user permissions.
+
