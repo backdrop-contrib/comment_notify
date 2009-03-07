@@ -224,6 +224,8 @@ function comment_notify_page() {
 function comment_notify_comment($comment, $op) {
   global $user;
 
+  // In theory, the update or insert operations are duplicates with publish which
+  // would lead to duplicate messages.  _comment_notify_mailalert() protects against that.
   switch ($op) {
     case 'validate':
        // We assume that if they are non-anonymous then they have a valid mail.
@@ -231,6 +233,10 @@ function comment_notify_comment($comment, $op) {
       if (!$user->uid && $comment['notify'] && empty($comment['mail'])) {
         form_set_error('mail', t('If you want to subscribe to comments you must supply a valid e-mail address.'));
       }
+      break;
+    case 'publish':
+      // And send notifications - the real purpose of the module.
+      _comment_notify_mailalert($comment);
       break;
     case 'update':
       // In case they have changed their status, save it in the database.
