@@ -119,7 +119,7 @@ function comment_notify_update_6001() {
     }
 
     $permissions = implode(', ', $permissions);
-    db_query("UPDATE {permission} SET perm = '%s' WHERE pid = %d", $permissions, $row->pid);
+    $ret[] = update_sql("UPDATE {permission} SET perm = '%s' WHERE pid = %d", $permissions, $row->pid);
   }
   return $ret;
 }
@@ -247,7 +247,7 @@ function comment_notify_update_6003() {
     // Provide an explaination of what we did.
     $ret[] = array('success' => TRUE, 'query' => t('Moved comment_notify user settings data from the {users} table into the {comment_notify_user_settings} table.'));
   }
-  else if ($uid == $next) {
+  elseif ($uid == $next) {
     unset($_SESSION['comment_notify_update_6003']);
     unset($_SESSION['comment_notify_update_6003_max']);
     $ret[] = array('success' => FALSE, 'query' => t('Something is maybe not right.'));
