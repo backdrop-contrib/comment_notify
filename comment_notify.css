@@ -8,8 +8,9 @@
   margin-left: 2em;  
 }
 
-#notify_clear {
-  clear: both;
+#comment-notify .form-radios {
+  overflow: hidden;
+  height: 100%;
 }
 
 #edit-notify-type-2-wrapper {

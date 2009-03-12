@@ -109,6 +109,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   }
 
   // If you want to hide this on your site see http://drupal.org/node/322482
+  $form['notify_open'] = array('#value' => '<div id="comment-notify">');
   $form['notify'] = array(
     '#type' => 'checkbox',
     '#title' => t('Notify me when new comments are posted'),
@@ -134,8 +135,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     $form['notify']['#default_value'] = $notify;
     $form['notify_type']['#default_value'] = $notify;
   }
-  // TODO: I wish this didn't have to be here, but I can't figure out what makes it better.  Patches welcome.
-  $form['notify_clearit'] = array('#value' => '<br id="notify_clear">', '#weight' => 9);
+  $form['notify_close'] = array('#value' => '</div>', '#weight' => 9);
 }
 
 /**
