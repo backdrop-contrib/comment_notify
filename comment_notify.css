@@ -1,11 +1,11 @@
 /* $Id$ */
 #edit-notify-type-1-wrapper, #edit-notify-type-2-wrapper {
-  float: left;
+  float: left;  /* LTR */
   display: inline;
 }
 
 #edit-notify-type-1-wrapper {
-  margin-left: 2em;  
+  margin-left: 2em;  /* LTR */
 }
 
 #comment-notify .form-radios {
@@ -14,5 +14,5 @@
 }
 
 #edit-notify-type-2-wrapper {
-  margin-left: 1em;
+  margin-left: 1em;  /* LTR */
 }
