@@ -419,8 +419,11 @@ function _comment_notify_mailalert($comment) {
     $sent_to[] = $author->mail;
   }
 
+  // For "reply to my comments" notifications, figure out what thread this is.
+  $thread = db_result(db_query("SELECT thread FROM {comments} WHERE cid = %d", $cid));
+
   //Get the list of commenters to notify
-  $result = db_query("SELECT DISTINCT c.cid, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init AS uinit, c.uid, c.name, cn.notify, cn.notify_hash
+  $result = db_query("SELECT DISTINCT c.cid, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init AS uinit, c.uid, c.name, cn.notify, cn.notify_hash, c.thread
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
     WHERE nid = %d AND cn.notify > 0 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", $nid
   );
@@ -430,7 +433,8 @@ function _comment_notify_mailalert($comment) {
     $umail = empty($alert->umail) ? $alert->uinit : $alert->umail;
     $mail = empty($alert->cmail) ? $umail : $alert->cmail;
 
-    if ($alert->notify == COMMENT_NOTIFY_COMMENT && $alert->cid != $comment->pid) {
+    $relevant_thread = substr($thread, 0, drupal_strlen($alert->thread) -1);
+    if ($alert->notify == COMMENT_NOTIFY_COMMENT && strcmp($relevant_thread . '/', $alert->thread) != 0) {
       continue;
     }
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
