@@ -260,7 +260,7 @@ function comment_notify_comment($comment, $op) {
       if ($comment['notify']) {
         $notify = $comment['notify_type'];
         $current = db_result(db_query("SELECT count(1) from {comment_notify_user_settings} WHERE uid = %d", $user->uid));
-        if ($current == 0) {
+        if ($current == 0 && $user->uid) {
           db_query("INSERT INTO {comment_notify_user_settings} (uid, comment_notify) VALUES (%d, %d)", $user->uid, $comment['notify_type']);
         }
       }
