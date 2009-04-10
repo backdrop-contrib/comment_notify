@@ -134,7 +134,12 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   if ($form['cid']['#value'] != '') {
     $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
     $form['notify']['#default_value'] = $notify;
-    $form['notify_type']['#default_value'] = $notify;
+    if (count($available_options) > 1) {
+      $form['notify_type']['#default_value'] = $notify;
+    }
+    else {
+      $form['notify_type']['#default_value'] = key($available_options);
+    }
   }
   $form['notify_close'] = array('#value' => '</div>', '#weight' => 9);
 }
