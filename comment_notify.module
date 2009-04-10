@@ -120,14 +120,15 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     $form['notify_type'] = array(
       '#type' => 'radios',
       '#options' => $available_options,
+      '#default_value' => $preference,
     );
   }
   else {
     $form['notify_type'] = array(
       '#type' => 'hidden',
+      '#default_value' => key($available_options),
     );
   }
-  $form['notify_type']['#default_value'] = $preference;
 
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
