@@ -397,7 +397,7 @@ function _comment_notify_mailalert($comment) {
 
   // Send to a subscribed author if they are not the current commenter
   $author = user_load(array('uid' => $node->uid));
-  if (!empty($author->node_notify_mailalert) && $author->node_notify_mailalert == 1 && $user->mail != $author->mail) {
+  if (!empty($author->node_notify_mailalert) && $author->node_notify_mailalert == 1 && $user->uid != $author->uid) {
     // Get the author's language.
     $language = user_preferred_language($author);
     $message['subject'] = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
@@ -418,7 +418,7 @@ function _comment_notify_mailalert($comment) {
         '!uri_brief' => preg_replace('!^https?://!', '', $base_url),
         '!date' => format_date(time()),
         '!login_uri' => url('user', array('absolute' => TRUE)),
-        '!edit_uri' => url('user/'. $alert->uid .'/edit', array('absolute' => TRUE))
+        '!edit_uri' => url('user/'. $author->uid .'/edit', array('absolute' => TRUE))
       )
     );
     drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
