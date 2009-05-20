@@ -1,6 +1,6 @@
 # $Id$
 #
-# LANGUAGE translation of Drupal (general)
+# Ukrainian translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
 # Generated from files:
 #  comment_notify.module,v 1.54 2009/03/07 19:22:51 greggles
@@ -9,21 +9,22 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Ukrainian translation\n"
-"POT-Creation-Date: 2009-05-15 01:14+0300\n"
-"PO-Revision-Date: 2009-05-15 01:18+0300\n"
-"Last-Translator: Andriy Podanenko <podarok@ua.fm>\n"
+"Project-Id-Version: comment_notify uk Ukrainian Translation\n"
+"POT-Creation-Date: 2009-05-20 22:48+0300\n"
+"PO-Revision-Date: 2009-05-20 22:59+0200\n"
+"Last-Translator: podarok <podarok@ua.fm>\n"
 "Language-Team: uk <podarok@ua.fm>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=((((n%10)==1)&&((n%100)!=11))?(0):(((((n%10)>=2)&&((n%10)<=4))&&(((n%100)<10)||((n%100)>=20)))?(1):2));\n"
 "X-Poedit-Language: Ukrainian\n"
 "X-Poedit-Country: UKRAINE\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #: comment_notify.module:61
 msgid "Comment follow-up e-mail notification for anonymous and registered users."
-msgstr ""
+msgstr "Сповіщення електронною поштою про подальші відгуки для гостей і зареєстрованихкористувачів."
 
 #: comment_notify.module:88;312;587;594
 msgid "All comments"
@@ -39,11 +40,11 @@ msgstr "Повідомляти мене, коли нові коментарі д
 
 #: comment_notify.module:209
 msgid "Your comment follow-up notification for this post was disabled. Thanks."
-msgstr ""
+msgstr "Сповіщення вас про подальші відгуки на цій сторінці було вимнено.Дякуємо."
 
 #: comment_notify.module:210
 msgid "Disabled comment follow-up notification feature for this post."
-msgstr ""
+msgstr "Вимкнено сповіщення про подальші відгуки для цієї сторінки."
 
 #: comment_notify.module:213;154
 msgid "Comment notify"
@@ -51,23 +52,23 @@ msgstr "Повідомлення про коментарі"
 
 #: comment_notify.module:234
 msgid "If you want to subscribe to comments you must supply a valid e-mail address."
-msgstr ""
+msgstr "Щоб отримувати сповіщення про відгуки Ви маєте вказати дійсний e-mail."
 
 #: comment_notify.module:294
 msgid "Comment follow-up notification settings"
-msgstr ""
+msgstr "Налаштування сповіщень про відгуки"
 
 #: comment_notify.module:301
 msgid "Receive node follow-up notification e-mails"
-msgstr ""
+msgstr "Отримувати сповіщення про відгуки на матеріали"
 
 #: comment_notify.module:303
 msgid "Check this box to receive an e-mail notification for follow-ups on your nodes (pages, forum topics, etc). You can not disable notifications for individual threads."
-msgstr ""
+msgstr "Увімкніть, щоб отримувати сповіщення на електронну адресу про відгуки на Ваші матеріали (сторінки, теми форумів тощо). Ви не можете вимкнути сповіщення для окремих гілок."
 
 #: comment_notify.module:308
 msgid "Receive comment follow-up notification e-mails"
-msgstr ""
+msgstr "Отримувати повідомлення про подальші відгуки електронною поштою"
 
 #: comment_notify.module:311;593
 msgid "No notifications"
@@ -75,7 +76,7 @@ msgstr "Не підписуватись"
 
 #: comment_notify.module:315
 msgid "Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don't want follow-up mails anymore - i.e. for very popular posts."
-msgstr ""
+msgstr "Встановіть цю галочку для отримання електронною поштою сповіщень про подальші відгуки на ваші коментарі. Ви можете цей параметр встановлювати окремо для кожного матеріалу... Отже, якщо ви виберете \"Повідомляти\", Ви, все одно, можете вимкнути сповіщення для відгуків, про які не хочете отримувати поштових повідомлень (наприклад, для дуже обговорюваних матеріалів)."
 
 #: comment_notify.module:397;446
 msgid "!site :: new comment for your post."
@@ -95,7 +96,7 @@ msgstr "Відписати цю почтову адресу"
 
 #: comment_notify.module:538
 msgid "There were no active comment notifications for that email."
-msgstr ""
+msgstr "Тут немає жодного повідомлення про відгуки на дану адресу."
 
 #: comment_notify.module:563
 msgid "@content-type"
@@ -103,15 +104,15 @@ msgstr "@content-type"
 
 #: comment_notify.module:569
 msgid "Anonymous commenters have the permission to subscribe to comments but cannot leave their contact infromation on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings."
-msgstr ""
+msgstr "Інонімні користувачі мають доступ для підписки на коментарі але не можуть залишати свою контактну інформацію для наступних типів матеріалів:  !types. Вам необхідно вимкнути підписки для відповідних типів, переназначити права анонімних користувачів, або надати анонімним користувачам можливість залишати контактну інформацію в параметрах коментування."
 
 #: comment_notify.module:574
 msgid "Content types to enable for comment notification"
-msgstr ""
+msgstr "Типи матеріалу із увімкненими повідомленнями про коментарі"
 
 #: comment_notify.module:577
 msgid "Comments on content types enabled here will have the option of comment notification."
-msgstr ""
+msgstr "Відгуки на вказані тут типи матеріалів будуть мати параметр \"сповіщення про відгуки\"."
 
 #: comment_notify.module:582
 msgid "Available subscription modes"
@@ -119,23 +120,23 @@ msgstr "Доступні режими підписки"
 
 #: comment_notify.module:585
 msgid "Choose which notification subscription styles are available for users"
-msgstr ""
+msgstr "Вибір стилів підписки, доступних для користувачів"
 
 #: comment_notify.module:600
 msgid "Default state for the notification selection box for anonymous users"
-msgstr ""
+msgstr "Базовий стан вибору підписки для анонімних користувачів"
 
 #: comment_notify.module:608
 msgid "Default state for the notification selection box for registered users."
-msgstr ""
+msgstr "Базовий стан форми підписки для зареєстрованих користувачів"
 
 #: comment_notify.module:611
 msgid "This flag presets the flag for the follow-up notification on the form that anon users will see when posting a comment"
-msgstr ""
+msgstr "Цей вибір представлятиметься як типовий при виборі сповіщення про відгуки у формі додавання коментаря."
 
 #: comment_notify.module:618
 msgid "Default mail text for sending out notifications to commenters"
-msgstr ""
+msgstr "Базовий текст електронного повідомлення для видправки авторам відгуків"
 
 #: comment_notify.module:619
 msgid ""
@@ -159,10 +160,29 @@ msgid ""
 "      <li>!link1 the QUICKLINK to disable future follow-up otifications for the user\n"
 "      </ul>"
 msgstr ""
+"Ви можете використовувати наведені шаблони для заміни:\n"
+"      <ul>\n"
+"      <li>!commname = ім’я користувача, який додав відгук\n"
+"      <li>!commtext = текст доданого відгуку\n"
+"      <li>!commsubj = тема доданого відгуку\n"
+"      <li>!comment_url = повний URL до матеріалу і відгуку - примітка: Якщо на сайті увімкнено розбиття відгуків на сторінки, це не буде коректно працювати - встановіть максимальну кількість відгуків на сторінку так, щоб відгуки умістилися на одній сторінці, або спосіб відображення відгуків встановіть у зворотному порядку\n"
+"      <li>!node_title = заголовок матеріалу, на який було додано відгук\n"
+"      <li>!node_teaser = вступ прокоментованого матеріалу\n"
+"      <li>!node_body = текст матеріалу, на який було додано відгук\n"
+"      <li>!mission = гасло сайту\n"
+"      <li>!name = ім’я користувача, який отримуватиме сповіщення\n"
+"      <li>!site = Ваш сайт\n"
+"      <li>!uri = базовий URL сайту\n"
+"      <li>!uri_brief = базовий URL сайту без http\n"
+"      <li>!date = Поточний час\n"
+"      <li>!login_uri = URI до сторінки авторизації\n"
+"      <li>!edit_uri = URI для редагування профілю користувача\n"
+"      <li>!link1 = посилання для швидкого припинення підписки на отримання сповіщень про відгуки\n"
+"      </ul>"
 
 #: comment_notify.module:648
 msgid "Default mail text for sending out the notifications to node authors"
-msgstr ""
+msgstr "Базовий текст електронного повідомлення для видправки авторам матеріалів"
 
 #: comment_notify.module:649
 msgid ""
@@ -185,32 +205,51 @@ msgid ""
 "      <li>!edit_uri = uri to edit user profile\n"
 "      </ul>"
 msgstr ""
+"Ви можете використовувати наведені шаблони для заміни:\n"
+"      <ul>\n"
+"      <li>!commname = ім’я користувача, який додав відгук\n"
+"      <li>!commtext = текст доданого відгуку\n"
+"      <li>!commsubj = тема доданого відгуку\n"
+"      <li>!comment_url = повний URL до матеріалу і відгуку - примітка: Якщо на сайті увімкнено розбиття відгуків на сторінки, це не буде коректно працювати - встановіть максимальну кількість відгуків на сторінку так, щоб відгуки умістилися на одній сторінці, або спосіб відображення відгуків встановіть у зворотному порядку\n"
+"      <li>!node_title = заголовок матеріалу, на який було додано відгук\n"
+"      <li>!node_teaser = вступ прокоментованого матеріалу\n"
+"      <li>!node_body = текст матеріалу, на який було додано відгук\n"
+"      <li>!mission = гасло сайту\n"
+"      <li>!name = ім’я користувача, який отримуватиме сповіщення\n"
+"      <li>!site = Ваш сайт\n"
+"      <li>!uri = базовий URL сайту\n"
+"      <li>!uri_brief = базовий URL сайту без http\n"
+"      <li>!date = Поточний час\n"
+"      <li>!login_uri = URI до сторінки авторизації\n"
+"      <li>!edit_uri = URI для редагування профілю користувача\n"
+"      </ul>"
 
 #: comment_notify.module:480;0
 msgid "comment_notify"
-msgstr ""
+msgstr "comment_notify"
 
 #: comment_notify.module:480
 msgid "Notified: !user_mail"
-msgstr ""
+msgstr "Повідомлено: !user_mail"
 
 #: comment_notify.module:541
 msgid "Email unsubscribed from 1 comment notification."
 msgid_plural "Email unsubscribed from @count comment notifications."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Адресу знято з підписки для @count повідомлення"
+msgstr[1] "Адресу знято з підписки для @count повідомлень"
+msgstr[2] "Адресу знято з підписки для @count повідомлень"
 
 #: comment_notify.module:145
 msgid "administer comment notify"
-msgstr ""
+msgstr "адміністрування підписки на коментарі"
 
 #: comment_notify.module:145
 msgid "subscribe to comments"
-msgstr ""
+msgstr "підписка на коментарі"
 
 #: comment_notify.module:155;163
 msgid "Configure settings for e-mails about new comments."
-msgstr ""
+msgstr "Налаштуйте повідомлення про нові відгуки."
 
 #: comment_notify.module:162
 msgid "Settings"
@@ -230,15 +269,15 @@ msgstr "повідомлення про коментарі"
 
 #: comment_notify.install:41
 msgid "Stores information about which commenters on the site have subscriped to followup emails."
-msgstr ""
+msgstr "Зберігає інформацію про те, які коментатори на сайті підписані на отримання сповіщень про відгуки."
 
 #: comment_notify.install:197
 msgid "For some reason the {comment_notify_user_settings} table was not properly created, and so per-user comment_notify settings could not be copied from {users}.data.  You will need to run this update again."
-msgstr ""
+msgstr "Через якісь причини таблиця {comment_notify_user_settings} не була створена, відповідно параметри користувачів не можуть бути скопійовані з {users}.data. Прохання запустити оновлення повторно."
 
 #: comment_notify.install:248
 msgid "Moved comment_notify user settings data from the {users} table into the {comment_notify_user_settings} table."
-msgstr ""
+msgstr "Переміщено параметри користувачів comment_notify з таблиці {users} в таблицю {comment_notify_user_settings}"
 
 #: comment_notify.install:253
 msgid "Something is maybe not right."
@@ -250,5 +289,5 @@ msgstr "Повідомлення про Коментарі"
 
 #: comment_notify.info:0
 msgid "Comment follow-up e-mail notification for anonymous as well as registered users."
-msgstr ""
+msgstr "Гості так само можуть бути сповіщені про нові відгуки, як і зареєстровані користувачі."
 
