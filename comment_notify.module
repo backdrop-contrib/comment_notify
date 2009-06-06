@@ -644,7 +644,7 @@ function comment_notify_settings() {
       <li>!date = the current time
       <li>!login_uri  uri to login the user
       <li>!edit_uri = uri to edit user profile
-      <li>!link1 the QUICKLINK to disable future follow-up otifications for the user
+      <li>!link1 the QUICKLINK to disable future follow-up notifications for the user
       </ul>'
     ),
     '#default_value' => variable_get('comment_notify_default_mailtext', t(DEFAULT_MAILTEXT)),
