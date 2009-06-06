@@ -88,7 +88,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     COMMENT_NOTIFY_NODE     => t('All comments'),
     COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
   );
-  $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT));
+  $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE => COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT => COMMENT_NOTIFY_COMMENT));
   foreach ($options as $key => $available) {
     if ($key == $available) {
       $available_options[$available] = $total_options[$available];
