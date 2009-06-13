@@ -53,14 +53,23 @@ define('COMMENT_NOTIFY_NODE', 1);
 define('COMMENT_NOTIFY_COMMENT', 2);
 
 /**
- * Implementation of hook_help().
+ * Provide an array of available options for notification on a comment.
  */
-function comment_notify_help($path, $arg) {
-  switch ($path) {
-    case 'admin/modules#description':
-      return t('Comment follow-up e-mail notification for anonymous and registered users.');
-      break;
+function _comment_notify_options() {
+  $total_options = array(
+    COMMENT_NOTIFY_NODE     => t('All comments'),
+    COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
+  );
+
+  $available_options = array();
+  $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT));
+  foreach ($options as $key => $available) {
+    if ($key == $available) {
+      $available_options[$available] = $total_options[$available];
+    }
   }
+
+  return $available_options;
 }
 
 /**
@@ -81,19 +90,10 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     return;
   }
 
+  $available_options = _comment_notify_options();
+
   drupal_add_css(drupal_get_path('module', 'comment_notify') .'/comment_notify.css');
   drupal_add_js(drupal_get_path('module', 'comment_notify') .'/comment_notify.js');
-
-  $total_options = array(
-    COMMENT_NOTIFY_NODE     => t('All comments'),
-    COMMENT_NOTIFY_COMMENT  => t('Replies to my comment')
-  );
-  $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE => COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT => COMMENT_NOTIFY_COMMENT));
-  foreach ($options as $key => $available) {
-    if ($key == $available) {
-      $available_options[$available] = $total_options[$available];
-    }
-  }
 
   // Add the checkbox for anonymous users and set the default based on admin settings.
   if ($user->uid == 0) {
@@ -109,39 +109,43 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   }
 
   // If you want to hide this on your site see http://drupal.org/node/322482
-  $form['notify_open'] = array('#value' => '<div id="comment-notify">');
-  $form['notify'] = array(
+  $form['notify_settings'] = array(
+    '#prefix' => '<div class="clear-block">',
+    '#suffix' => '</div>',
+  );
+
+  $form['notify_settings']['notify'] = array(
     '#type' => 'checkbox',
     '#title' => t('Notify me when new comments are posted'),
     '#default_value' => $preference,
   );
 
   if (count($available_options) > 1) {
-    $form['notify_type'] = array(
+    $form['notify_settings']['notify_type'] = array(
       '#type' => 'radios',
       '#options' => $available_options,
       '#default_value' => $preference,
     );
   }
   else {
-    $form['notify_type'] = array(
+    $form['notify_settings']['notify_type'] = array(
       '#type' => 'hidden',
       '#default_value' => key($available_options),
     );
   }
+  $form['notify_settings']['notify_type']['#default_value'] = $preference;
 
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
     $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
-    $form['notify']['#default_value'] = $notify;
+    $form['notify_settings']['notify']['#default_value'] = $notify;
     if (count($available_options) > 1) {
-      $form['notify_type']['#default_value'] = $notify;
+      $form['notify_settings']['notify_type']['#default_value'] = $notify;
     }
     else {
-      $form['notify_type']['#default_value'] = key($available_options);
+      $form['notify_settings']['notify_type']['#default_value'] = key($available_options);
     }
   }
-  $form['notify_close'] = array('#value' => '</div>', '#weight' => 9);
 }
 
 /**
@@ -182,9 +186,10 @@ function comment_notify_menu() {
     'access arguments' => array('administer comment notify'),
     'type' => MENU_LOCAL_TASK,
   );
-  $items['comment_notify'] = array(
-    'title' => 'comment notify',
-    'page callback' => 'comment_notify_page',
+  $items['comment_notify/disable/%'] = array(
+    'title' => 'Disable comment notification',
+    'page callback' => 'comment_notify_disable_page',
+    'page arguments' => array(2),
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK
   );
@@ -195,33 +200,11 @@ function comment_notify_menu() {
 /**
  * Page callback to allow users to unsubscribe simply by visiting the page.
  */
-function comment_notify_page() {
-  global $user;
+function comment_notify_disable_page($hash) {
+  db_query("UPDATE {comment_notify} SET notify = 0 WHERE notify_hash = '%s'", $hash);
 
-  $op = $_POST['op'];
-  $edit = $_POST['edit'];
-
-  $page_content = ' ';
-  if (empty($op)) {
-    $op = arg(1);
-  }
-  $arg = arg(2);
-
-  switch ($op) {
-    case 'disable':
-      $key = $arg;
-      db_query("UPDATE {comment_notify} SET notify = 0 WHERE notify_hash = '%s'", $arg);
-
-      drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
-      $title = t('Disabled comment follow-up notification feature for this post.');
-      break;
-    default;
-      $title = t('Comment notify');
-      break;
-  }
-
-  drupal_set_title($title);
-  return $page_content;
+  drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
+  return ' ';
 }
 
 /**
@@ -506,11 +489,13 @@ function _comment_notify_mailalert($comment) {
   db_query('UPDATE {comment_notify} SET notified = 1 WHERE cid = %d', $cid);
 }
 
+/**
+ * Implementation of hook_mail().
+ */
 function comment_notify_mail($key, &$message, $params) {
   $message['subject'] = $params['subject'];
   $message['body'][] = $params['body'];
 }
-
 
 /**
  * Callback for an administrative form to unsubscribe users by e-mail address.
