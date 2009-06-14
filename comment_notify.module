@@ -105,7 +105,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   }
   else {
     $user_preference = db_result(db_query("SELECT comment_notify FROM {comment_notify_user_settings} WHERE uid = %d", $user->uid));
-    $preference = !empty($user_preference) ? $user_preference : variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_DISABLED);
+    $preference = strlen($user_preference) ? $user_preference : variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_DISABLED);
   }
 
   // If you want to hide this on your site see http://drupal.org/node/322482
