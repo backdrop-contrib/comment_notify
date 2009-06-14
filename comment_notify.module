@@ -600,7 +600,7 @@ function comment_notify_settings() {
 
   $form['comment_notify_settings']['comment_notify_default_registered_mailalert'] = array(
     '#type' => 'select',
-    '#title' => t('Default state for the notification selection box for registered users.'),
+    '#title' => t('Default state for the notification selection box for registered users'),
     '#return_value' => 1,
     '#default_value' => variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_NODE),
     '#description' => t('This flag presets the flag for the follow-up notification on the form that anon users will see when posting a comment'),
