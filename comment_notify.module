@@ -404,7 +404,8 @@ function _comment_notify_mailalert($comment) {
 
   // Send to a subscribed author if they are not the current commenter
   $author = user_load(array('uid' => $node->uid));
-  if (!empty($author->node_notify_mailalert) && $author->node_notify_mailalert == 1 && $user->uid != $author->uid) {
+  if (!empty($author->node_notify_mailalert) && $author->node_notify_mailalert == 1 && $user->uid != $author->uid && node_access('view', $node, $author)) {
+
     // Get the author's language.
     $language = user_preferred_language($author);
     $message['subject'] = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
@@ -436,9 +437,9 @@ function _comment_notify_mailalert($comment) {
   $thread = db_result(db_query("SELECT thread FROM {comments} WHERE cid = %d", $cid));
 
   //Get the list of commenters to notify
-  $result = db_query("SELECT DISTINCT c.cid, c.uid, c.name, c.nid, c.mail AS cmail, u.mail AS umail, u.init AS uinit, c.uid, c.name, cn.notify, cn.notify_hash, c.thread
+  $result = db_query(db_rewrite_sql("SELECT c.cid, c.nid, c.uid, c.name, c.mail AS cmail, u.mail AS umail, u.init AS uinit, c.uid, c.name, cn.notify, cn.notify_hash, c.thread
     FROM {comments} c INNER JOIN {comment_notify} cn on c.cid = cn.cid LEFT OUTER JOIN {users} u ON c.uid = u.uid
-    WHERE nid = %d AND cn.notify > 0 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", $nid
+    WHERE c.nid = %d AND cn.notify > 0 AND c.status = 0 AND (u.status = 1 OR u.uid = 0)", 'c', 'cid'), $nid
   );
   // TODO? the original big query had stuff making sure the mail was populated and contained .+@.+ Perhaps check for that here and set notify = 0 if that is the case for this cid
 
@@ -458,6 +459,11 @@ function _comment_notify_mailalert($comment) {
       }
       else {
         $language = language_default();
+        $recipient_user = drupal_anonymous_user();
+      }
+      // Make sure they have access to this node before showing a bunch of node information.
+      if (!node_access('view', $node, $recipient_user)) {
+        continue;
       }
 
       $message['subject'] = t('!site :: new comment for your post.', array('!site' => variable_get('site_name', 'drupal')));
