@@ -285,12 +285,28 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
           '#collapsible' => TRUE
         );
 
-        $form['comment_notify_settings']['node_notify_mailalert'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('Receive node follow-up notification e-mails'),
-          '#default_value' => isset($edit['node_notify_mailalert']) ? $edit['node_notify_mailalert'] : variable_get('node_notify_default_mailalert', FALSE),
-          '#description' => t('Check this box to receive an e-mail notification for follow-ups on your nodes (pages, forum topics, etc). You can not disable notifications for individual threads.')
-        );
+        // Only show the node followup UI if the user has permission to create nodes.
+        $nodes = FALSE;
+        foreach (node_get_types() as $type) {
+          if (user_access('create '. $type->type .' content')) {
+            $nodes = TRUE;
+            break;
+          }
+        }
+        if (user_access('administer nodes') || $nodes) {
+          $form['comment_notify_settings']['node_notify_mailalert'] = array(
+            '#type' => 'checkbox',
+            '#title' => t('Receive node follow-up notification e-mails'),
+            '#default_value' => isset($edit['node_notify_mailalert']) ? $edit['node_notify_mailalert'] : variable_get('node_notify_default_mailalert', FALSE),
+            '#description' => t('Check this box to receive an e-mail notification for follow-ups on your nodes (pages, forum topics, etc). You can not disable notifications for individual threads.')
+          );
+        }
+        else {
+          $form['comment_notify_settings']['node_notify_mailalert'] = array(
+            '#type' => 'hidden',
+            '#value' => COMMENT_NOTIFY_DISABLED,
+          );
+        }
 
         $available_options[COMMENT_NOTIFY_DISABLED] = t('No notifications');
         $available_options += _comment_notify_options();
@@ -308,10 +324,8 @@ function comment_notify_user($type, &$edit, &$user, $category = NULL) {
     case 'submit':
       // Save the values of node_notify_mailalert and comment_notify_mailalert
       // to {comment_notify_user_settings}.
-      if (db_result(db_query('SELECT uid FROM {comment_notify_user_settings} WHERE uid = %d', $user->uid))) {
-        db_query('UPDATE {comment_notify_user_settings} SET node_notify = %d, comment_notify = %d WHERE uid = %d', $edit['node_notify_mailalert'], $edit['comment_notify_mailalert'], $user->uid);
-      }
-      else {
+      db_query('UPDATE {comment_notify_user_settings} SET node_notify = %d, comment_notify = %d WHERE uid = %d', $edit['node_notify_mailalert'], $edit['comment_notify_mailalert'], $user->uid);
+      if (!db_affected_rows()) {
         db_query('INSERT INTO {comment_notify_user_settings} (uid, node_notify, comment_notify) VALUES (%d, %d, %d)', $user->uid, $edit['node_notify_mailalert'], $edit['comment_notify_mailalert']);
       }
 
@@ -366,11 +380,18 @@ function _comment_notify_mailalert($comment) {
     $languages = $languages['name'];
   }
 
-  // Render up the node and comment.
   $node = node_load($nid);
+
+  // Render up the node and comment.
   $node_teaser = node_view($node, TRUE, TRUE, FALSE);
   $node_body = node_view($node, FALSE, TRUE, FALSE);
   $comment_text = check_markup($comment->comment, $comment->format);
+
+  // No mails if this is not an enabled content type.
+  $enabled_types = variable_get('comment_notify_node_types', array($node->type => TRUE));
+  if (empty($enabled_types[$node->type])) {
+    return;
+  }
 
   if (!isset($comment->mail)) {
     $comment_account = user_load(array('name' => $comment->name));
