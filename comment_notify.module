@@ -366,7 +366,12 @@ function _comment_notify_mailalert($comment) {
     $languages = $languages['name'];
   }
 
+  // Render up the node and comment.
   $node = node_load($nid);
+  $node_teaser = node_view($node, TRUE, TRUE, FALSE);
+  $node_body = node_view($node, FALSE, TRUE, FALSE);
+  $comment_text = check_markup($comment->comment, $comment->format);
+
   if (!isset($comment->mail)) {
     $comment_account = user_load(array('name' => $comment->name));
     $comment_mail = $comment_account->mail;
@@ -386,13 +391,13 @@ function _comment_notify_mailalert($comment) {
       variable_get('node_notify_default_mailtext', AUTHOR_MAILTEXT),
       array(
         '!commname' => $comment->name,
-        '!commtext' => $comment->comment,
+        '!commtext' => drupal_html_to_text($comment_text),
         '!commsubj' => $comment->subject,
         '!comment_url' => url('node/'. $nid, array('absolute' => TRUE, 'fragment' => 'comment-'. $cid)),
         '!node_title' =>  $node->title,
-        '!node_teaser' => $node->teaser,
+        '!node_teaser' => drupal_html_to_text($node_teaser),
         '!mission' => variable_get('site_mission', ''),
-        '!node_body' =>  $node->body,
+        '!node_body' =>  drupal_html_to_text($node_body),
         '!name' => $author->name,
         '!site' => variable_get('site_name', 'drupal'),
         '!uri' => $base_url,
@@ -439,13 +444,13 @@ function _comment_notify_mailalert($comment) {
         variable_get('comment_notify_default_mailtext', DEFAULT_MAILTEXT),
         array(
           '!commname' => $comment->name,
-          '!commtext' => $comment->comment,
+          '!commtext' => drupal_html_to_text($comment_text),
           '!commsubj' => $comment->subject,
           '!comment_url' => url('node/'. $nid, array('absolute' => TRUE, 'fragment' => 'comment-'. $cid)),
           '!node_title' =>  $node->title,
-          '!node_teaser' => $node->teaser,
+          '!node_teaser' => drupal_html_to_text($node_teaser),
           '!mission' => variable_get('site_mission', ''),
-          '!node_body' =>  $node->body,
+          '!node_body' =>  drupal_html_to_text($node_body),
           '!name' => $alert->name,
           '!site' => variable_get('site_name', 'drupal'),
           '!uri' => $base_url,
