@@ -84,7 +84,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   }
 
   // Only add the checkbox if this is an enabled content type
-  $node = node_load($form['nid']['#value']);
+  $node = node_load($form['nid']['#value'] ? $form['nid']['#value'] : $form['nid']['#default_value']);
   $enabled_types = variable_get('comment_notify_node_types', array($node->type => TRUE));
   if (empty($enabled_types[$node->type])) {
     return;
