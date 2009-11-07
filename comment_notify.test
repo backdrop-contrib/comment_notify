@@ -31,7 +31,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
   function testCommentNotifyAnonymousUserFunctionalTest() {
     // Code that does something to be tested.
     // Create and login administrative user.
-    $admin_user = $this->drupalCreateUser(array('administer comment notify', 'administer permissions'));
+    $admin_user = $this->drupalCreateUser(array('administer comment notify', 'administer permissions', 'administer comments'));
     $this->drupalLogin($admin_user);
 
     // Enable comment notify on this node and allow anonymous information in comments.
@@ -48,8 +48,34 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     $this->setPermission('anonymous user', array('access comments' => TRUE, 'access content' => TRUE, 'post comments' => TRUE, 'post comments without approval' => TRUE, 'subscribe to comments' => TRUE));
     $this->drupalLogout();
 
-    $anonymous_comment = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, TRUE, TRUE);
+    $subscribe_1 = array('notify' => TRUE, 'notify_type' => 1);
+    $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, TRUE, $subscribe_1);
     $this->assertText(t('If you want to subscribe to comments you must supply a valid e-mail address.'), t('Anonymous user must leave E-mail if they want to get notifications.'));
+
+    $anonymous_comment_1 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_1, array('mail' => $this->randomName() .'@'. $this->randomName()));
+
+    // Confirm that the notification is saved.
+    $result = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $anonymous_comment_1['id']));
+    $this->assertEqual($result, $subscribe_1['notify_type'], 'Notify selection option 1 is saved properly.');
+
+    // Notify type 2.
+    $subscribe_2 = array('notify' => TRUE, 'notify_type' => 2);
+    $anonymous_comment_2 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_2, array('mail' => $this->randomName() .'@'. $this->randomName()));
+
+    // Confirm that the notification is saved.
+    $result = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $anonymous_comment_2['id']));
+    $this->assertEqual($result, $subscribe_2['notify_type'], 'Notify selection option 2 is saved properly.');
+
+    // Notify type 0 (i.e. only one mode is enabled).
+    variable_set('comment_notify_available_alerts', array(1 => 0, 2 => 2));
+    $subscribe_0 = array('notify' => TRUE);
+    $anonymous_comment_0 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_0, array('mail' => $this->randomName() .'@'. $this->randomName()));
+
+    // Confirm that the notification is saved.
+    $result = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $anonymous_comment_0['id']));
+    $this->assertEqual($result, 2, 'Notify selection option 0 is saved properly.');
+
+
 
     // TODO a whole bunch more tests that check if mail was "sent".
   }
@@ -96,7 +122,10 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     $edit = array();
     $edit['subject'] = $subject;
     $edit['comment'] = $comment;
-    $edit['notify'] = $notify;
+
+    if ($notify !== NULL && is_array($notify)) {
+      $edit += $notify;
+    }
 
     if ($contact !== NULL && is_array($contact)) {
       $edit += $contact;
@@ -116,7 +145,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     preg_match('/#comment-([^"]+)/', $this->getURL(), $match);
 
     // Get comment.
-    if ($contact !== TRUE) { // If true then attempting to find error message.
+    if (!empty($match[1])) { // If true then attempting to find error message.
       if ($subject) {
         $this->assertText($subject, 'Comment subject posted.');
       }
@@ -125,7 +154,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     }
 
     if (isset($match[1])) {
-      return (object) array('id' => $match[1], 'subject' => $subject, 'comment' => $comment);
+      return array('id' => $match[1], 'subject' => $subject, 'comment' => $comment);
     }
   }
 

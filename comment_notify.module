@@ -62,7 +62,7 @@ function _comment_notify_options() {
   );
 
   $available_options = array();
-  $options = variable_get('comment_notify_available_alerts', array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT));
+  $options = variable_get('comment_notify_available_alerts', drupal_map_assoc(array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)));
   foreach ($options as $key => $available) {
     if ($key == $available) {
       $available_options[$available] = $total_options[$available];
@@ -78,72 +78,70 @@ function _comment_notify_options() {
 function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   global $user;
 
-  // Only do alter the form if it's a comment form and the user has the permission to subscribe
-  if ($form_id != 'comment_form' || !user_access('subscribe to comments')) {
-    return;
-  }
-
-  // Only add the checkbox if this is an enabled content type
-  $node = node_load($form['nid']['#value'] ? $form['nid']['#value'] : $form['nid']['#default_value']);
-  $enabled_types = variable_get('comment_notify_node_types', array($node->type => TRUE));
-  if (empty($enabled_types[$node->type])) {
-    return;
-  }
-
-  $available_options = _comment_notify_options();
-
-  drupal_add_css(drupal_get_path('module', 'comment_notify') .'/comment_notify.css');
-  drupal_add_js(drupal_get_path('module', 'comment_notify') .'/comment_notify.js');
-
-  // Add the checkbox for anonymous users and set the default based on admin settings.
-  if ($user->uid == 0) {
-    // If anonymous user's can't enter their e-mail don't tempt them with the checkbox.
-    if (empty($form['mail'])) {
+  // Only alter the form if it's a comment form and the user has the permission to subscribe.
+  if ($form_id == 'comment_form' && (user_access('subscribe to comments') || user_access('administer comments'))) {
+    // Only add the checkbox if this is an enabled content type
+    $node = node_load($form['nid']['#value'] ? $form['nid']['#value'] : $form['nid']['#default_value']);
+    $enabled_types = variable_get('comment_notify_node_types', drupal_map_assoc(array($node->type)));
+    if (empty($enabled_types[$node->type])) {
       return;
     }
-    $preference = variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_DISABLED);
-  }
-  else {
-    $user_preference = db_result(db_query("SELECT comment_notify FROM {comment_notify_user_settings} WHERE uid = %d", $user->uid));
-    $preference = strlen($user_preference) ? $user_preference : variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_DISABLED);
-  }
 
-  // If you want to hide this on your site see http://drupal.org/node/322482
-  $form['notify_settings'] = array(
-    '#prefix' => '<div class="clear-block">',
-    '#suffix' => '</div>',
-  );
+    $available_options = _comment_notify_options();
 
-  $form['notify_settings']['notify'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Notify me when new comments are posted'),
-    '#default_value' => $preference,
-  );
+    drupal_add_css(drupal_get_path('module', 'comment_notify') .'/comment_notify.css');
+    drupal_add_js(drupal_get_path('module', 'comment_notify') .'/comment_notify.js');
 
-  if (count($available_options) > 1) {
-    $form['notify_settings']['notify_type'] = array(
-      '#type' => 'radios',
-      '#options' => $available_options,
-      '#default_value' => $preference,
-    );
-  }
-  else {
-    $form['notify_settings']['notify_type'] = array(
-      '#type' => 'hidden',
-      '#default_value' => key($available_options),
-    );
-  }
-  $form['notify_settings']['notify_type']['#default_value'] = $preference;
-
-  // If this is an existing comment we set the default value based on their selection last time.
-  if ($form['cid']['#value'] != '') {
-    $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
-    $form['notify_settings']['notify']['#default_value'] = $notify;
-    if (count($available_options) > 1) {
-      $form['notify_settings']['notify_type']['#default_value'] = $notify;
+    // Add the checkbox for anonymous users and set the default based on admin settings.
+    if ($user->uid == 0) {
+      // If anonymous user's can't enter their e-mail don't tempt them with the checkbox.
+      if (empty($form['mail'])) {
+        return;
+      }
+      $preference = variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_DISABLED);
     }
     else {
-      $form['notify_settings']['notify_type']['#default_value'] = key($available_options);
+      $user_preference = db_result(db_query("SELECT comment_notify FROM {comment_notify_user_settings} WHERE uid = %d", $user->uid));
+      $preference = strlen($user_preference) ? $user_preference : variable_get('comment_notify_default_registered_mailalert', COMMENT_NOTIFY_DISABLED);
+    }
+
+    // If you want to hide this on your site see http://drupal.org/node/322482
+    $form['notify_settings'] = array(
+      '#prefix' => '<div class="clear-block">',
+      '#suffix' => '</div>',
+    );
+
+    $form['notify_settings']['notify'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Notify me when new comments are posted'),
+      '#default_value' => $preference,
+    );
+
+    if (count($available_options) > 1) {
+      $form['notify_settings']['notify_type'] = array(
+        '#type' => 'radios',
+        '#options' => $available_options,
+        '#default_value' => $preference,
+      );
+    }
+    else {
+      $form['notify_settings']['notify_type'] = array(
+        '#type' => 'hidden',
+        '#value' => key($available_options),
+      );
+    }
+    $form['notify_settings']['notify_type']['#default_value'] = $preference;
+
+    // If this is an existing comment we set the default value based on their selection last time.
+    if ($form['cid']['#value'] != '') {
+      $notify = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $form['cid']['#value']));
+      $form['notify_settings']['notify']['#default_value'] = $notify;
+      if (count($available_options) > 1) {
+        $form['notify_settings']['notify_type']['#default_value'] = $notify;
+      }
+      else {
+        $form['notify_settings']['notify_type']['#default_value'] = key($available_options);
+      }
     }
   }
 }
@@ -248,6 +246,7 @@ function comment_notify_comment($comment, $op) {
 
       if ($comment['notify']) {
         $notify = $comment['notify_type'];
+        // If they don't have a preference, save one.
         $current = db_result(db_query("SELECT count(1) from {comment_notify_user_settings} WHERE uid = %d", $user->uid));
         if ($current == 0 && $user->uid) {
           db_query("INSERT INTO {comment_notify_user_settings} (uid, comment_notify) VALUES (%d, %d)", $user->uid, $comment['notify_type']);
@@ -591,7 +590,7 @@ function comment_notify_settings() {
   }
 
   if (!empty($anonymous_problems)) {
-    drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact infromation on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))));
+    drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact infromation on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))), 'status', FALSE);
   }
 
   $form['comment_notify_settings']['comment_notify_node_types'] = array(
