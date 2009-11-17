@@ -411,6 +411,7 @@ function _comment_notify_mailalert($comment) {
     $message['body'] = t(
       variable_get('node_notify_default_mailtext', AUTHOR_MAILTEXT),
       array(
+        '!cid' => $cid,
         '!commname' => $comment->name,
         '!commtext' => drupal_html_to_text($comment_text),
         '!commsubj' => $comment->subject,
@@ -418,6 +419,7 @@ function _comment_notify_mailalert($comment) {
         '!node_title' =>  $node->title,
         '!node_teaser' => drupal_html_to_text($node_teaser),
         '!mission' => variable_get('site_mission', ''),
+        '!nid' =>  $nid,
         '!node_body' =>  drupal_html_to_text($node_body),
         '!name' => $author->name,
         '!site' => variable_get('site_name', 'drupal'),
@@ -469,6 +471,7 @@ function _comment_notify_mailalert($comment) {
       $message['body'] = t(
         variable_get('comment_notify_default_mailtext', DEFAULT_MAILTEXT),
         array(
+          '!cid' => $cid,
           '!commname' => $comment->name,
           '!commtext' => drupal_html_to_text($comment_text),
           '!commsubj' => $comment->subject,
@@ -476,6 +479,7 @@ function _comment_notify_mailalert($comment) {
           '!node_title' =>  $node->title,
           '!node_teaser' => drupal_html_to_text($node_teaser),
           '!mission' => variable_get('site_mission', ''),
+          '!nid' =>  $nid,
           '!node_body' =>  drupal_html_to_text($node_body),
           '!name' => $alert->name,
           '!site' => variable_get('site_name', 'drupal'),
@@ -646,10 +650,12 @@ function comment_notify_settings() {
     '#description' => t(
       'You can use the following variables to be replaced:
       <ul>
+      <li>!cid = the comment id for the comment
       <li>!commname = the username who posted the comment
       <li>!commtext = the text of the posted comment
       <li>!commsubj = the subject of the posted comment
       <li>!comment_url = the full url of the post and comment - note: if you have paging enabled, this does not work correct - set your max comments per page so that all fit on one page or reverse order them
+      <li>!nid = the node id the comment was posted on
       <li>!node_title = the title of the node that was commented on
       <li>!node_teaser = the teaser of the node that was commented on
       <li>!node_body = the body of the node that was commented on
@@ -676,10 +682,12 @@ function comment_notify_settings() {
     '#description' => t(
       'You can use the following variables to be replaced:
       <ul>
+      <li>!cid = the comment id for the comment
       <li>!commname = the username who posted the comment
       <li>!commtext = the text of the posted comment
       <li>!commsubj = the subject of the posted comment
       <li>!comment_url = the full url of the post and comment - note: if you have paging enabled, this does not work correct - set your max comments per page so that all fit on one page or reverse order them
+      <li>!nid = the node id the comment was posted on
       <li>!node_title = the title of the node that was commented on
       <li>!node_teaser = the teaser of the node that was commented on
       <li>!node_body = the body of the node that was commented on
