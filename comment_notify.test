@@ -41,43 +41,47 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     // Create a node with comments allowed.
     $this->node = $this->drupalCreateNode(array('type' => 'story', 'promote' => 1, 'comment' => 2));
 
-    // Get the page and post the comment.
-    $this->drupalGet('comment/reply/' . $this->node->nid);
-
-    // Ensure that the contact form won't be shown without categories.
+    // Allow anonymous users to post comments and get notifications.
     $this->setPermission('anonymous user', array('access comments' => TRUE, 'access content' => TRUE, 'post comments' => TRUE, 'post comments without approval' => TRUE, 'subscribe to comments' => TRUE));
     $this->drupalLogout();
 
+    // Notify type 1 - All comments on the node.
+    // First confirm that we properly require an e-mail address.
     $subscribe_1 = array('notify' => TRUE, 'notify_type' => 1);
     $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, TRUE, $subscribe_1);
     $this->assertText(t('If you want to subscribe to comments you must supply a valid e-mail address.'), t('Anonymous user must leave E-mail if they want to get notifications.'));
 
-    $anonymous_comment_1 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_1, array('mail' => $this->randomName() .'@'. $this->randomName()));
+    // Try again with an e-mail address.
+    $contact_1 = array('mail' => $this->randomName() .'@'. $this->randomName());
+    $anonymous_comment_1 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_1, $contact_1);
 
     // Confirm that the notification is saved.
     $result = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $anonymous_comment_1['id']));
     $this->assertEqual($result, $subscribe_1['notify_type'], 'Notify selection option 1 is saved properly.');
 
-    // Notify type 2.
+    // Notify type 2 - replies to a comment.
     $subscribe_2 = array('notify' => TRUE, 'notify_type' => 2);
-    $anonymous_comment_2 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_2, array('mail' => $this->randomName() .'@'. $this->randomName()));
+    $contact_2 = array('mail' => $this->randomName() .'@'. $this->randomName());
+    $anonymous_comment_2 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_2, $contact_2);
 
     // Confirm that the notification is saved.
     $result = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $anonymous_comment_2['id']));
     $this->assertEqual($result, $subscribe_2['notify_type'], 'Notify selection option 2 is saved properly.');
 
+    // Confirm that the original subscriber with all comments on this node got their mail.
+    $this->assertMail('to', $contact_1['mail'], t('Message was sent to the proper anonymous user.'));
+
     // Notify type 0 (i.e. only one mode is enabled).
     variable_set('comment_notify_available_alerts', array(1 => 0, 2 => 2));
     $subscribe_0 = array('notify' => TRUE);
-    $anonymous_comment_0 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_0, array('mail' => $this->randomName() .'@'. $this->randomName()));
+    $contact_0 = array('mail' => $this->randomName() .'@'. $this->randomName());
+    $anonymous_comment_0 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), TRUE, $subscribe_0, $contact_0);
 
     // Confirm that the notification is saved.
     $result = db_result(db_query("SELECT notify FROM {comment_notify} WHERE cid = %d", $anonymous_comment_0['id']));
     $this->assertEqual($result, 2, 'Notify selection option 0 is saved properly.');
 
-
-
-    // TODO a whole bunch more tests that check if mail was "sent".
+    // TODO yet more tests.
   }
 
 
