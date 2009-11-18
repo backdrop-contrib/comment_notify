@@ -2,4 +2,7 @@
 name = Comment Notify
 description = "Comment follow-up e-mail notification for anonymous as well as registered users."
 dependencies[] = comment
-core = 6.x
+core = 7.x
+files[] = comment_notify.install
+files[] = comment_notify.module
+files[] = comment_notify.test
