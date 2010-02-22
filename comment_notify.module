@@ -682,20 +682,3 @@ function comment_notify_tokens($type, $tokens, array $data = array(), array $opt
 
 }
 
-
-function comment_notify_tokens($type, $tokens, array $data = array(), array $options = array()) {
-
-  // Add the tokens for unsubscribe links
-  if ($type != "comment" ||!isset($data['comment'])) {
-    return;
-  }
-  $cid = $data['comment']->cid;
-  $hash = comment_notify_get_notify_hash($cid);
-  if (!$hash) {
-    return;
-  }
-  $replacements = array();
-  $replacements['comment:unsubscribe_url'] = url('comment_notify/disable/'. $hash, array('absolute' => TRUE));
-  return $replacements;
-
-}
