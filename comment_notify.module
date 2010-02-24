@@ -454,7 +454,7 @@ function _comment_notify_mailalert($comment) {
       continue;
     }
 
-    if ($mail != $comment_mail && !in_array($mail, $sent_to) && $alert->uid != $comment->uid) {
+    if ($mail != $comment_mail && !in_array($mail, $sent_to) && ($alert->uid != $comment->uid || $alert->uid == 0)) {
 
       $message = array();
       if (!empty($alert->uid)) {
