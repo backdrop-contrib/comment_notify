@@ -578,7 +578,7 @@ function comment_notify_settings() {
   }
 
   if (!empty($anonymous_problems)) {
-    drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact infromation on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))), 'status', FALSE);
+    drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact information on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))), 'status', FALSE);
   }
 
   $form['comment_notify_settings']['comment_notify_node_types'] = array(
