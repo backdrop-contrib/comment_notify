@@ -1,5 +1,5 @@
 <?php
-// $Id;
+// $Id$
 
 /**
  * @file
@@ -9,7 +9,7 @@
 
 /**
  * Get the notification preferences for a specific user.
- * 
+ *
  * @param integer $uid
  * @return StdClass
  */
@@ -21,14 +21,15 @@ function comment_notify_get_user_notification_setting($uid) {
     }
     // Handle anonymous users with defaults.
     if ($uid == 0) {
-      $users[0] = new StdClass();
-      $users[0]->comment_notify = comment_notify_variable_registry_get('default_registered_mailalert'); 
+      $users[0] = new stdClass();
+      $users[0]->comment_notify = comment_notify_variable_registry_get('default_registered_mailalert');
       $users[0]->node_notify = comment_notify_variable_registry_get('node_notify_default_mailalert');
-    } else {
+    }
+    else {
       $result = db_select('comment_notify_user_settings', 'cnus')
-       ->fields('cnus')
-       ->condition('uid', $uid)
-       ->execute();
+        ->fields('cnus')
+        ->condition('uid', $uid)
+        ->execute();
       $users[$uid] = $result->fetchObject();
     }
   }
@@ -37,7 +38,7 @@ function comment_notify_get_user_notification_setting($uid) {
 
 /**
  * Remove comment notification preferences for a user.
- *  
+ *
  * @param integer $uid
  * @return boolean
  */
@@ -49,7 +50,7 @@ function comment_notify_delete_user_notification_setting($uid) {
 
 /**
  * Get a user's default preference for comment notification.
- * 
+ *
  * @param integer $uid
  * @return integer
  */
@@ -60,9 +61,9 @@ function comment_notify_get_user_comment_notify_preference($uid) {
 
 /**
  * Get a user's default preference for node update notification.
- * 
+ *
  * This is notification on nodes where the user is the author.
- * 
+ *
  * @param integer $uid
  * @return integer
  */
@@ -73,7 +74,7 @@ function comment_notify_get_user_node_notify_preference($uid) {
 
 /**
  * Sets the notification preferences for a specific user.
- * 
+ *
  * @param integer $uid
  * @param integer $node_notification
  * @param integer $comment_notification
@@ -88,12 +89,13 @@ function comment_notify_set_user_notification_setting($uid, $node_notification =
     $fields['node_notify'] = $node_notification;
   }
   if (!is_null($comment_notification)) {
-    $fields['comment_notify'] = $comment_notification;  
+    $fields['comment_notify'] = $comment_notification;
   }
   if (comment_notify_get_user_notification_setting($uid)) {
     $query = db_update('comment_notify_user_settings');
     $query->condition('uid', $uid);
-  } else {
+  }
+  else {
     $query = db_insert('comment_notify_user_settings');
   }
   return (bool)$query
@@ -103,7 +105,7 @@ function comment_notify_set_user_notification_setting($uid, $node_notification =
 
 /**
  * Add a notification against a comment.
- * 
+ *
  * @param integer $cid
  * @param integer $notify
  * @param string $notify_hash
@@ -112,16 +114,16 @@ function comment_notify_set_user_notification_setting($uid, $node_notification =
 function comment_notify_add_notification($cid, $notify, $notify_hash) {
   return (bool)db_insert('comment_notify')
     ->fields(array(
-    	'cid' => $cid,
+      'cid' => $cid,
       'notify' => $notify,
-      'notify_hash' =>$notify_hash,
+      'notify_hash' => $notify_hash,
     ))
     ->execute();
 }
 
 /**
  * Remove all the notifications linked with a comment
- * 
+ *
  * @param integer $cid
  * @return boolean
  */
@@ -133,7 +135,7 @@ function comment_notify_remove_all_notifications($cid) {
 
 /**
  * Updated a notification with a different notification type
- * 
+ *
  * @param integer $cid
  * @param integer $notify
  * @return boolean
@@ -149,7 +151,7 @@ function comment_notify_update_notification($cid, $notify) {
 
 /**
  * Returns TRUE if the owner of this comment notification has already been notified.
- * 
+ *
  * @param integer $cid
  * @return boolean
  */
@@ -164,12 +166,12 @@ function comment_notify_is_notification_already_sent($cid) {
 
 /**
  * Get the unique identification hash for a comment notification record.
- * 
+ *
  * @param integer $cid
  * @return string
  */
 function comment_notify_get_notify_hash($cid) {
- return db_select('comment_notify', 'cn')
+  return db_select('comment_notify', 'cn')
     ->fields('cn', array('notify_hash'))
     ->condition('cid', $cid)
     ->execute()
@@ -178,12 +180,12 @@ function comment_notify_get_notify_hash($cid) {
 
 /**
  * Get the type of notification for a comment notification record.
- * 
+ *
  * @param integer $cid
  * @return integer
  */
 function comment_notify_get_notification_type($cid) {
- return db_select('comment_notify', 'cn')
+  return db_select('comment_notify', 'cn')
     ->fields('cn', array('notify'))
     ->condition('cid', $cid)
     ->execute()
@@ -192,7 +194,7 @@ function comment_notify_get_notification_type($cid) {
 
 /**
  * Returns the thread which a comment belongs to.
- * 
+ *
  * @param integer $cid
  * @return string
  *  The thread identifier.
@@ -207,7 +209,7 @@ function comment_notify_get_thread($cid) {
 
 /**
  * Get a list of mails which need to be contacted for a node.
- * 
+ *
  * @param integer $nid
  * @return QueryStatement
  */
@@ -229,20 +231,20 @@ function comment_notify_get_watchers($nid) {
   $query->addField('c', 'mail', 'cmail');
   $query->addField('u', 'init', 'uinit');
   $query->addField('u', 'mail', 'umail');
-  
+
   return $query->execute();
 }
 
 /**
  * Record that the owner of a comment notification request has already been notified.
- * 
+ *
  * @param integer $cid
  * @return boolean
  */
 function comment_notify_mark_comment_as_notified($cid) {
   return (bool)db_update('comment_notify')
     ->fields(array(
-    	'notified' => 1,
+      'notified' => 1,
     ))
     ->condition('cid', $cid)
     ->execute();
@@ -253,62 +255,63 @@ function comment_notify_mark_comment_as_notified($cid) {
  *
  * If the email belongs to a user, it will unsubscribe all of their comment notify records.
  * If it does not, then it will unsubscribe all anonymous users.
- * 
+ *
  * @param string $mail
  * @return boolean
  */
 function comment_notify_unsubscribe_by_email($mail) {
   $update_query = db_update('comment_notify');
   $update_query->fields(array('notify' => 0));
-  
+
   $comment_query = db_select('comment', 'c');
   $comment_query->fields('c', array('cid'));
-  
+
   $uid = db_select('users', 'u')
     ->fields('u', array('uid'))
     ->condition('mail', $mail)
     ->execute()
     ->fetchField();
   if ($uid) {
-    $comment_query->condition('uid', $uid);  
-  } else {
+    $comment_query->condition('uid', $uid);
+  }
+  else {
     $comment_query->condition('mail', $mail);
   }
   $update_query->condition('cid', $comment_query, 'IN');
-  
+
   return (bool)$update_query->execute();
 }
 
 /**
  * Unsubscribe all comment notification requests associated with a hash.
- * 
+ *
  * This is used in the unsubscribe link.
- * 
+ *
  * @param string $hash
  * @return boolean
  */
 function comment_notify_unsubscribe_by_hash($hash) {
   return (bool)db_update('comment_notify')
     ->fields(array(
-    	'notify' => 0,
+      'notify' => 0,
     ))
     ->condition('notify_hash', $hash)
     ->execute();
 }
-  
+
 /**
  * Helper function to centralize variable management and defaults.
- * 
+ *
  * All variables full under the "comment_notify" psuedo namespace.  This ensures
  * consistancy, and eliminates some verbosity in the calling code.  In addition
  * by storing all of the variables in one place, we avoid repeating duplicate
  * defaults which are harder to maintain.
- * 
+ *
  * @param string $name
  * @return mixed
  */
 function comment_notify_variable_registry_get($name) {
-  $variables = array ();
+  $variables = array();
   $variables['author_subject'] = '[site:name] :: new comment for your post.';
   $variables['available_alerts'] = array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT);
   $variables['default_anon_mailalert'] = COMMENT_NOTIFY_NODE;
@@ -318,8 +321,8 @@ function comment_notify_variable_registry_get($name) {
   $variables['comment_notify_default_registered_mailalert'] = COMMENT_NOTIFY_DISABLED;
   $variables['watcher_subject'] = '[site:name] :: new comment on [node:title]';
   $variables['comment_notify_default_mailtext'] = DEFAULT_MAILTEXT;
-  $variables['node_types'] = array('article' =>'article');
-  
+  $variables['node_types'] = array('article' => 'article');
+
   // Errors
   $variables['error_anonymous_email_missing'] = 'If you want to subscribe to comments you must supply a valid e-mail address.';
   return variable_get("comment_notify_" . $name, $variables[$name]);
@@ -327,7 +330,7 @@ function comment_notify_variable_registry_get($name) {
 
 /**
  * Helper function to centralize setting variables.
- * 
+ *
  * @param string $name
  * @param mixed $value
  * @return boolean
@@ -338,7 +341,7 @@ function comment_notify_variable_registry_set($name, $value) {
 
 /**
  * Helper function to tokenize a piece of text for a comment notify mail.
- * 
+ *
  * @param string $text
  * @param StdClass $comment
  *  A comment object.

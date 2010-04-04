@@ -94,8 +94,8 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 
   $available_options = _comment_notify_options();
 
-  drupal_add_css(drupal_get_path('module', 'comment_notify') .'/comment_notify.css');
-  drupal_add_js(drupal_get_path('module', 'comment_notify') .'/comment_notify.js');
+  drupal_add_css(drupal_get_path('module', 'comment_notify') . '/comment_notify.css');
+  drupal_add_js(drupal_get_path('module', 'comment_notify') . '/comment_notify.js');
 
   // Add the checkbox for anonymous users and set the default based on admin settings.
   if ($user->uid == 0) {
@@ -150,7 +150,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 }
 
 /**
- * Implement of hook_permission().
+ * Implements hook_permission().
  */
 function comment_notify_permission() {
   return array(
@@ -166,7 +166,7 @@ function comment_notify_permission() {
 }
 
 /**
- * Implement of hook_menu().
+ * Implements hook_menu().
  */
 function comment_notify_menu() {
 
@@ -213,7 +213,8 @@ function comment_notify_menu() {
 function comment_notify_disable_page($hash) {
   if (comment_notify_unsubscribe_by_hash($hash)) {
     drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
-  } else {
+  }
+  else {
     drupal_set_message(t('Sorry, there was a problem unsubscribing from notifications.'));
   }
   return ' ';
@@ -285,7 +286,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   if (!($form_id == 'user_register_form' || $form_id == 'user_profile_form')) {
     return;
   }
-  elseif ($form['#user_category'] != 'account'){
+  elseif ($form['#user_category'] != 'account') {
     return;
   }
 
@@ -306,7 +307,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   // Only show the node followup UI if the user has permission to create nodes.
   $nodes = FALSE;
   foreach (node_type_get_names() as $type) {
-    if (user_access('create '. $type .' content')) {
+    if (user_access('create ' . $type . ' content')) {
       $nodes = TRUE;
       break;
     }
@@ -428,7 +429,7 @@ function _comment_notify_mailalert($comment) {
   if (!empty($author->comment_notify_settings->node_notify) && $author->node_notify_mailalert == 1 && $user->uid != $author->uid && node_access('view', $node, $author)) {
     // Get the author's language.
     $language = user_preferred_language($author);
-    $raw_values = array (
+    $raw_values = array(
       'subject' => comment_notify_variable_registry_get('author_subject'),
       'body'  => comment_notify_variable_registry_get('node_notify_default_mailtext'), //JS @todo:change this.
     );
@@ -451,7 +452,7 @@ function _comment_notify_mailalert($comment) {
     $umail = empty($alert->umail) ? $alert->uinit : $alert->umail;
     $mail = empty($alert->cmail) ? $umail : $alert->cmail;
 
-    $relevant_thread = substr($thread, 0, drupal_strlen($alert->thread) -1);
+    $relevant_thread = drupal_substr($thread, 0, drupal_strlen($alert->thread) -1);
     if ($alert->notify == COMMENT_NOTIFY_COMMENT && strcmp($relevant_thread . '/', $alert->thread) != 0) {
       continue;
     }
@@ -472,7 +473,7 @@ function _comment_notify_mailalert($comment) {
         continue;
       }
 
-      $raw_values = array (
+      $raw_values = array(
         'subject' => comment_notify_variable_registry_get('watcher_subject'),
         'body'  => comment_notify_variable_registry_get('comment_notify_default_mailtext'), //JS @todo:change this var name.
       );
@@ -490,7 +491,7 @@ function _comment_notify_mailalert($comment) {
 
       // Make the mail link to user's /edit, unless it's an anonymous user.
       if ($alert->uid != 0) {
-        $user_mail = l($mail, 'user/'. $alert->uid .'/edit');
+        $user_mail = l($mail, 'user/' . $alert->uid . '/edit');
       }
       else {
         $user_mail = check_plain($mail);
@@ -502,8 +503,8 @@ function _comment_notify_mailalert($comment) {
         'Notified: !user_mail',
       array('!user_mail' => $user_mail),
       WATCHDOG_NOTICE,
-      l(t('source comment'), 'node/'. $nid, array(
-          'fragment' => 'comment-'. $alert->cid,
+      l(t('source comment'), 'node/' . $nid, array(
+          'fragment' => 'comment-' . $alert->cid,
       ))
       );
 
@@ -518,7 +519,7 @@ function _comment_notify_mailalert($comment) {
 }
 
 /**
- * Implement of hook_mail().
+ * Implements hook_mail().
  */
 function comment_notify_mail($key, &$message, $params) {
   $message['subject'] = $params['subject'];
@@ -571,10 +572,10 @@ function comment_notify_settings() {
     $default[] = $type;
 
     // If they don't have the ability to leave contact info, then we make a report
-    if (isset($enabled_types[$type]) && $enabled_types[$type] && variable_get('comment_anonymous_'. $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
+    if (isset($enabled_types[$type]) && $enabled_types[$type] && variable_get('comment_anonymous_' . $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
       $account = drupal_anonymous_user();
       if (user_access('subscribe to comments', $account)) {
-        $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/'. $type);
+        $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/' . $type);
       }
     }
   }
@@ -679,7 +680,7 @@ function comment_notify_tokens($type, $tokens, array $data = array(), array $opt
     return;
   }
   $replacements = array();
-  $replacements['comment:unsubscribe_url'] = url('comment_notify/disable/'. $hash, array('absolute' => TRUE));
+  $replacements['comment:unsubscribe_url'] = url('comment_notify/disable/' . $hash, array('absolute' => TRUE));
   return $replacements;
 
 }
