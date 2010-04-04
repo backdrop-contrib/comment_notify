@@ -253,7 +253,7 @@ function comment_notify_comment_insert($comment) {
   $mail = empty($comment->mail) ? $user->mail : $comment->mail;
   $notify_hash = drupal_get_token($mail . $comment->cid);
 
-  if ($comment->notify) {
+  if (isset($comment->notify)) {
     $notify = $comment->notify_type;
     // If they don't have a preference, save one.
     $current = comment_notify_get_user_comment_notify_preference($user->uid);
