@@ -1,9 +1,6 @@
 <?php
 // $Id$
 
-// Contains functions which utilize the database and other internal helpers.
-include_once 'comment_notify.lib.inc';
-
 /**
  * @file
  *
@@ -80,6 +77,7 @@ function _comment_notify_options() {
 
 
 function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) {
+  
   global $user;
   if (!(user_access('subscribe to comments') || user_access('administer comments'))) {
     return;
@@ -100,12 +98,16 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
   // Add the checkbox for anonymous users and set the default based on admin settings.
   if ($user->uid == 0) {
     // If anonymous user's can't enter their e-mail don't tempt them with the checkbox.
-    if (empty($form['mail'])) {
+    if (empty($form['author']['mail'])) {
       return;
     }
+    
+    $form['#validate'][] = 'comment_notify_comment_validate';
+    
     $preference = variable_get('comment_notify_default_anon_mailalert', COMMENT_NOTIFY_DISABLED);
   }
   else {
+    module_load_include('inc', 'comment_notify', 'comment_notify');
     $preference = comment_notify_get_user_comment_notify_preference($user->uid);
   }
 
@@ -113,6 +115,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
   $form['notify_settings'] = array(
       '#prefix' => '<div class="clear-block">',
       '#suffix' => '</div>',
+      '#weight' => 0,
   );
 
   $form['notify_settings']['notify'] = array(
@@ -138,6 +141,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
+    module_load_include('inc', 'comment_notify', 'comment_notify');
     $notify = comment_notify_get_notification_type($form['cid']['#value']);
     $form['notify_settings']['notify']['#default_value'] = $notify;
     if (count($available_options) > 1) {
@@ -211,6 +215,7 @@ function comment_notify_menu() {
  * Page callback to allow users to unsubscribe simply by visiting the page.
  */
 function comment_notify_disable_page($hash) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
   if (comment_notify_unsubscribe_by_hash($hash)) {
     drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
   }
@@ -225,7 +230,7 @@ function comment_notify_comment_validate($comment) {
   global $user;
   // We assume that if they are non-anonymous then they have a valid mail.
   // For anonymous users, though, we verify that they entered a mail and let comment.module validate it is real.
-  if (!$user->uid && $comment->notify && empty($comment->mail)) {
+  if (!$user->uid && $comment['notify_settings']['notify']['#value'] && empty($comment['author']['mail']['#value'])) {
     form_set_error('mail', t('If you want to subscribe to comments you must supply a valid e-mail address.'));
   }
 }
@@ -236,6 +241,8 @@ function comment_notify_comment_publish($comment) {
 }
 
 function comment_notify_comment_update($comment) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  
   // In case they have changed their status, save it in the database.
   if (isset($comment->notify_type)) {
     comment_notify_update_notification($comment->cid, $comment->notify_type);
@@ -248,9 +255,12 @@ function comment_notify_comment_update($comment) {
 }
 
 function comment_notify_comment_insert($comment) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  
   global $user;
   // For new comments, we first build up a string to be used as the identifier for the alert
   // JS: This is terribly broken.  What if the user changes their email??!?
+  // GK: The values are stored in the table for all eternity so it doesn't matter!11!!!!! (p.s. issues are better than snarkomments)
   $mail = empty($comment->mail) ? $user->mail : $comment->mail;
   $notify_hash = drupal_get_token($mail . $comment->cid);
 
@@ -275,6 +285,7 @@ function comment_notify_comment_insert($comment) {
 }
 
 function comment_notify_comment_delete($comment) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
   comment_notify_remove_all_notifications($comment->cid);
 }
 
@@ -283,6 +294,8 @@ function comment_notify_comment_delete($comment) {
  * Implement hook_form_alter().
  */
 function comment_notify_form_alter(&$form, &$form_state, $form_id) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+    
   if (!($form_id == 'user_register_form' || $form_id == 'user_profile_form')) {
     return;
   }
@@ -296,13 +309,11 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
     $comment_notify = $user->comment_notify_settings->comment_notify;
   }
 
-
   $form['comment_notify_settings'] = array(
           '#type' => 'fieldset',
           '#title' => t('Comment follow-up notification settings'),
           '#weight' => 4,          '#collapsible' => TRUE
   );
-
 
   // Only show the node followup UI if the user has permission to create nodes.
   $nodes = FALSE;
@@ -346,6 +357,8 @@ function comment_notify_user_update(&$edit, $account, $category) {
     return;
   }
   if (isset($edit['node_notify']) && isset($edit['comment_notify'])) {
+    module_load_include('inc', 'comment_notify', 'comment_notify');
+    
     // Save the values of node_notify_mailalert and comment_notify_mailalert
     // to {comment_notify_user_settings}.
     comment_notify_set_user_notification_setting($account->uid, $edit['node_notify'], $edit['comment_notify']);
@@ -357,6 +370,8 @@ function comment_notify_user_update(&$edit, $account, $category) {
 }
 
 function comment_notify_user_load(&$users) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  
   // Why would we want to load this on every user load?
   foreach ($users as &$user) {
     $user->comment_notify_settings = comment_notify_get_user_notification_setting($user->uid);
@@ -374,6 +389,7 @@ function comment_notify_user_load(&$users) {
 }
 
 function comment_notify_user_cancel(&$edit, $account, $method) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
   comment_notify_delete_user_notification_setting($account->uid);
 }
 
@@ -384,6 +400,8 @@ function comment_notify_user_cancel(&$edit, $account, $method) {
  *   The comment array as found in hook_comment $op = publish.
  */
 function _comment_notify_mailalert($comment) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  
   $comment = (object) $comment;
   global $language;
   global $base_url;
@@ -546,6 +564,7 @@ function comment_notify_unsubscribe($form, &$form_state) {
  * Based on admin submit, do the actual unsubscribe from notifications.
  */
 function comment_notify_unsubscribe_submit($form, &$form_state) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
   $email = trim($form_state['values']['email_to_unsubscribe']);
   $comments = comment_notify_unsubscribe_by_email($email);
   // Update the admin about the state of this comment notification subscription.
@@ -562,6 +581,8 @@ function comment_notify_unsubscribe_submit($form, &$form_state) {
  * Page callback for administrative settings form.
  */
 function comment_notify_settings() {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  
   $form['comment_notify_settings'] = array();
 
   // Only perform comment_notify for certain node types.
@@ -575,7 +596,7 @@ function comment_notify_settings() {
     if (isset($enabled_types[$type]) && $enabled_types[$type] && variable_get('comment_anonymous_' . $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
       $account = drupal_anonymous_user();
       if (user_access('subscribe to comments', $account)) {
-        $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/content/node-type/' . $type);
+        $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/structure/types/manage/'. $type);
       }
     }
   }
@@ -669,7 +690,8 @@ function comment_notify_settings_validate($form, &$form_state) {
 
 
 function comment_notify_tokens($type, $tokens, array $data = array(), array $options = array()) {
-
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  
   // Add the tokens for unsubscribe links
   if ($type != "comment" ||!isset($data['comment'])) {
     return;
