@@ -9,9 +9,8 @@
  * Implementation of hook_install().
  */
 function comment_notify_install() {
-  // Create the table.
-  drupal_install_schema('comment_notify');
-  
+
+  // Create entries for existing comments.    
   $comments_select = db_select('comment', 'c');
   $comments_select->join('users', 'u', 'c.uid = u.uid');
   $comments_select->addField('c', 'cid');
@@ -37,7 +36,6 @@ function comment_notify_install() {
  * Implementation of hook_uninstall().
  */
 function comment_notify_uninstall() {
-  drupal_uninstall_schema('comment_notify');
   variable_del('node_notify_default_mailtext');
   db_delete('variable')
   	->where('name', "comment_notify_%", 'LIKE');
