@@ -236,7 +236,9 @@ function comment_notify_comment_publish($comment) {
 
 function comment_notify_comment_update($comment) {
   // In case they have changed their status, save it in the database.
-  comment_notify_update_notification($comment->cid, $comment->notify_type);
+  if (isset($comment->notify_type)) {
+    comment_notify_update_notification($comment->cid, $comment->notify_type);
+  }
   // And send notifications - the real purpose of the module.
   if ($comment->status == COMMENT_PUBLISHED) {
     _comment_notify_mailalert($comment);
