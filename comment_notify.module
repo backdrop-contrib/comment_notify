@@ -121,7 +121,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
   $form['notify_settings']['notify'] = array(
       '#type' => 'checkbox',
       '#title' => t('Notify me when new comments are posted'),
-      '#default_value' => $preference,
+      '#default_value' => (bool) $preference,
   );
 
   if (count($available_options) > 1) {
@@ -373,20 +373,12 @@ function comment_notify_user_update(&$edit, $account, $category) {
 function comment_notify_user_load(&$users) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
   
-  // Why would we want to load this on every user load?
+  // @todo: Why would we want to load this on every user load?
   foreach ($users as &$user) {
     $user->comment_notify_settings = comment_notify_get_user_notification_setting($user->uid);
   }
 
   return;
-
-  // @todo: Fix this naming weirdness.
-  foreach ($users as $user) {
-    $result = db_select('comment_notify_user_settings', 'cnus')
-    ->fields('cnus', array('node_notify' => 'node_notify_mailalert', 'comment_notify' => 'comment_notify_mailalert'))
-    ->condition('uid', $user->uid)
-    ->execute();
-  }
 }
 
 function comment_notify_user_cancel(&$edit, $account, $method) {

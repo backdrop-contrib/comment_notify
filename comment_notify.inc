@@ -30,7 +30,15 @@ function comment_notify_get_user_notification_setting($uid) {
         ->fields('cnus')
         ->condition('uid', $uid)
         ->execute();
-      $users[$uid] = $result->fetchObject();
+      // Use defaults if they have no value (e.g. created before comment_notify).
+      if (!isset($result->comment_notify)) {
+        $users[$uid] = (object) array(
+          'comment_notify' => comment_notify_variable_registry_get('default_registered_mailalert'),
+          'node_notify' => comment_notify_variable_registry_get('node_notify_default_mailalert'));
+      }
+      else {
+        $users[$uid] = $result->fetchObject();
+      }
     }
   }
   return $users[$uid];
@@ -56,7 +64,7 @@ function comment_notify_delete_user_notification_setting($uid) {
  */
 function comment_notify_get_user_comment_notify_preference($uid) {
   $setting = comment_notify_get_user_notification_setting($uid);
-  return is_null($setting->comment_notify) ? comment_notify_variable_registry_get('node_notify_default_mailalert') : $setting->comment_notify;
+  return !isset($setting->comment_notify) ? comment_notify_variable_registry_get('default_registered_mailalert') : $setting->comment_notify;
 }
 
 /**
@@ -69,7 +77,7 @@ function comment_notify_get_user_comment_notify_preference($uid) {
  */
 function comment_notify_get_user_node_notify_preference($uid) {
   $setting = comment_notify_get_user_notification_setting($uid);
-  return is_null($setting->node_notify) ? comment_notify_variable_registry_get('default_registered_mailalert') : $setting->node_notify;
+  return !isset($setting->node_notify) ? comment_notify_variable_registry_get('node_notify_default_mailalert') : $setting->node_notify;
 }
 
 /**
@@ -317,7 +325,7 @@ function comment_notify_variable_registry_get($name) {
   $variables['default_anon_mailalert'] = COMMENT_NOTIFY_NODE;
   $variables['node_notify_default_mailtext'] = AUTHOR_MAILTEXT;
   $variables['default_registered_mailalert'] = COMMENT_NOTIFY_DISABLED;
-  $variables['node_notify_default_mailalert'] = FALSE;
+  $variables['node_notify_default_mailalert'] = 0;
   $variables['comment_notify_default_registered_mailalert'] = COMMENT_NOTIFY_DISABLED;
   $variables['watcher_subject'] = '[site:name] :: new comment on [node:title]';
   $variables['comment_notify_default_mailtext'] = DEFAULT_MAILTEXT;
