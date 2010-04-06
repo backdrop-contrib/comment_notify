@@ -261,6 +261,7 @@ function comment_notify_comment_insert($comment) {
   // For new comments, we first build up a string to be used as the identifier for the alert
   // JS: This is terribly broken.  What if the user changes their email??!?
   // GK: The values are stored in the table for all eternity so it doesn't matter!11!!!!! (p.s. issues are better than snarkomments)
+  // TODO however, if this were a comment created by a service or xmlrpc or something the global $user is a bad user to use.
   $mail = empty($comment->mail) ? $user->mail : $comment->mail;
   $notify_hash = drupal_get_token($mail . $comment->cid);
 
@@ -433,7 +434,7 @@ function _comment_notify_mailalert($comment) {
   }
 
   if (!isset($comment->mail)) {
-    $comment_account = user_load(array('name' => $comment->name));
+    $comment_account = user_load_by_name($comment->name);
     $comment_mail = $comment_account->mail;
   }
   else {
@@ -442,7 +443,7 @@ function _comment_notify_mailalert($comment) {
   $sent_to = array();
 
   // Send to a subscribed author if they are not the current commenter
-  $author = user_load(array('uid' => $node->uid));
+  $author = user_load($node->uid);
 
   if (!empty($author->comment_notify_settings->node_notify) && $author->node_notify_mailalert == 1 && $user->uid != $author->uid && node_access('view', $node, $author)) {
     // Get the author's language.
@@ -479,7 +480,7 @@ function _comment_notify_mailalert($comment) {
 
       $message = array();
       if (!empty($alert->uid)) {
-        $recipient_user = user_load(array('uid' => $alert->uid));
+        $recipient_user = user_load($alert->uid);
         $language = user_preferred_language($recipient_user);
       }
       else {
