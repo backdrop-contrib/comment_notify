@@ -63,8 +63,8 @@ function comment_notify_schema() {
         'disp-width' => '11'),
       'notify_hash' => array(
         'type' => 'varchar',
-        'description' => 'An md5 hash of unique information about the commenter.  Used for unsubscribing users.',
-        'length' => '32',
+        'description' => 'A hash of unique information about the commenter.  Used for unsubscribing users.',
+        'length' => '128',
         'not null' => TRUE,
         'default' => ''),
       'notified' => array(
@@ -104,4 +104,22 @@ function comment_notify_schema() {
   );
 
   return $schema;
+}
+
+/**
+ * Head 2 head update for the new size of the hash field.
+ */
+function comment_notify_update_7002() {
+  $new_spec = array(
+    'type' => 'varchar',
+    'description' => 'A hash of unique information about the commenter.  Used for unsubscribing users.',
+    'length' => '128',
+    'not null' => TRUE,
+    'default' => ''
+  );
+  $keys = array(
+    'indexes' => array('notify_hash' => array('notify_hash')),
+  );
+  db_drop_index('comment_notify', 'notify_hash');
+  db_change_field('comment_notify', 'notify_hash', 'notify_hash', $new_spec, $keys);
 }
