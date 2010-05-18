@@ -11,7 +11,8 @@
  * Get the notification preferences for a specific user.
  *
  * @param integer $uid
- * @return StdClass
+ * @return mixed
+ *  StdClass if found, else NULL
  */
 function comment_notify_get_user_notification_setting($uid) {
   $users = &drupal_static(__FUNCTION__);
@@ -26,22 +27,28 @@ function comment_notify_get_user_notification_setting($uid) {
       $users[0]->node_notify = comment_notify_variable_registry_get('node_notify_default_mailalert');
     }
     else {
-      $result = db_select('comment_notify_user_settings', 'cnus')
+      $setting = db_select('comment_notify_user_settings', 'cnus')
         ->fields('cnus')
         ->condition('uid', $uid)
-        ->execute();
-      // Use defaults if they have no value (e.g. created before comment_notify).
-      if (!isset($result->comment_notify)) {
-        $users[$uid] = (object) array(
-          'comment_notify' => comment_notify_variable_registry_get('default_registered_mailalert'),
-          'node_notify' => comment_notify_variable_registry_get('node_notify_default_mailalert'));
+        ->execute()
+        ->fetchObject();
+
+      if (!$setting) {
+        return NULL;
       }
       else {
-        $users[$uid] = $result->fetchObject();
+        $users[$uid] = $setting;
       }
     }
   }
   return $users[$uid];
+}
+
+function comment_notify_get_default_notification_setting() {
+  return (object) array(
+    'comment_notify' => comment_notify_variable_registry_get('default_registered_mailalert'),
+    'node_notify' => comment_notify_variable_registry_get('node_notify_default_mailalert')
+  );
 }
 
 /**
@@ -64,7 +71,10 @@ function comment_notify_delete_user_notification_setting($uid) {
  */
 function comment_notify_get_user_comment_notify_preference($uid) {
   $setting = comment_notify_get_user_notification_setting($uid);
-  return !isset($setting->comment_notify) ? comment_notify_variable_registry_get('default_registered_mailalert') : $setting->comment_notify;
+  if (!$setting) {
+    $setting = comment_notify_get_default_notification_setting();
+  }
+  return $setting->comment_notify;
 }
 
 /**
@@ -77,7 +87,10 @@ function comment_notify_get_user_comment_notify_preference($uid) {
  */
 function comment_notify_get_user_node_notify_preference($uid) {
   $setting = comment_notify_get_user_notification_setting($uid);
-  return !isset($setting->node_notify) ? comment_notify_variable_registry_get('node_notify_default_mailalert') : $setting->node_notify;
+  if (!$setting) {
+    $settings = comment_notify_get_default_notification_setting();
+  }
+  return $setting->node_notify;
 }
 
 /**
@@ -93,6 +106,7 @@ function comment_notify_set_user_notification_setting($uid, $node_notification =
     throw new Exception('Cannot set user preference, uid missing');
   }
   $fields = array('uid' => $uid);
+  
   if (!is_null($node_notification)) {
     $fields['node_notify'] = $node_notification;
   }
@@ -310,7 +324,7 @@ function comment_notify_unsubscribe_by_hash($hash) {
 /**
  * Helper function to centralize variable management and defaults.
  *
- * All variables full under the "comment_notify" psuedo namespace.  This ensures
+ * All variables fall under the "comment_notify" psuedo namespace.  This ensures
  * consistancy, and eliminates some verbosity in the calling code.  In addition
  * by storing all of the variables in one place, we avoid repeating duplicate
  * defaults which are harder to maintain.
