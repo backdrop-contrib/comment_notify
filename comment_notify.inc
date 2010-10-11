@@ -361,25 +361,3 @@ function comment_notify_variable_registry_set($name, $value) {
   return variable_set("comment_notify_" . $name, $value);
 }
 
-/**
- * Helper function to tokenize a piece of text for a comment notify mail.
- *
- * @param string $text
- * @param StdClass $comment
- *  A comment object.
- * @param StdClass $node
- *  A node object.
- * @param StdClass $user
- *  A user object.
- * @return string
- *  The processed string.
- */
-function comment_notify_tokenize($text, $comment, $node, $user) {
-  $data = array(
-    'node' => $node,
-    'comment' => $comment,
-    'user' => $user,
-  );
-  return token_replace($text, $data);
-}
-

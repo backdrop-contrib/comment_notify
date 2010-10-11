@@ -13,7 +13,7 @@ define('COMMENT_NOTIFY_COMMENT', 2);
 
 
 define('AUTHOR_MAILTEXT',
-'Hi [user:name],
+'Hi [comment:node:author],
 
 You have received a comment on: "[node:title]"
 
@@ -27,7 +27,7 @@ You can view the comment at the following url
 
 You will receive emails like this for all replies to your posts. You can
 disable this by logging in and changing the settings on your user account at
-[user:edit-url].
+[comment:node:author:edit-url].
 
 -- [site:name] team
 [site:url]');
@@ -46,10 +46,10 @@ You can view the comment at the following url
 [comment:url]
 
 You can stop receiving emails when someone replies to this post,
-by going to [comment:unsubscribe_url]
+by going to [comment:unsubscribe-url]
 
 You can set up auto-following feature for all future posts
-by creating your own user with a few clicks here [site:url]/user/register
+by creating your own user with a few clicks here [site:login-url]
 
 -- [site:name] team
 [site:url]');
@@ -445,7 +445,7 @@ function _comment_notify_mailalert($comment) {
       'body'  => comment_notify_variable_registry_get('node_notify_default_mailtext'), //JS @todo:change this.
     );
     foreach ($raw_values as $k => $v) {
-      $message[$k] = comment_notify_tokenize(t($v), $comment, $node, $user);
+      $message[$k] = token_replace(t($v), array('comment' => $comment, 'node' => $node, 'user' => $user));
     }
 
     drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
@@ -490,7 +490,7 @@ function _comment_notify_mailalert($comment) {
       );
 
       foreach ($raw_values as $k => $v) {
-        $message[$k] = comment_notify_tokenize(t($v), $comment, $node, $user);
+        $message[$k] = token_replace(t($v), array('comment' => $comment, 'node' => $node, 'user' => $user));
       }
 
       //      array(
@@ -644,12 +644,9 @@ function comment_notify_settings() {
     '#description' => t('If this is checked, new users will receive e-mail notifications for follow-ups on their nodes by default until they individually disable the feature.'),
   );
 
-  $token_help = "Need a theme_token_info :(";
-
   $form['comment_notify_settings']['comment_notify_comment_notify_default_mailtext'] = array(
     '#type' => 'textarea',
     '#title' => t('Default mail text for sending out notifications to commenters'),
-    '#suffix' => $token_help,
     '#default_value' => comment_notify_variable_registry_get('comment_notify_default_mailtext'),
     '#return_value' => 1,
     '#cols' => 80,
@@ -659,11 +656,15 @@ function comment_notify_settings() {
   $form['comment_notify_settings']['comment_notify_node_notify_default_mailtext'] = array(
     '#type' => 'textarea',
     '#title' => t('Default mail text for sending out the notifications to node authors'),
-    '#suffix' => $token_help,
     '#default_value' => comment_notify_variable_registry_get('node_notify_default_mailtext'),
      '#return_value' => 1,
      '#cols' => 80,
      '#rows' => 15
+  );
+
+  $form['comment_notify_settings']['token_help'] = array(
+    '#theme' => 'token_tree',
+    '#token_types' => array('comment'),
   );
 
   $form['#validate'] = array('comment_notify_settings_validate');
@@ -679,24 +680,5 @@ function comment_notify_settings_validate($form, &$form_state) {
   if (!$sum_enabled) {
     form_set_error('comment_notify_available_alerts', 'You must enable at least one subscription mode.');
   }
-}
-
-
-function comment_notify_tokens($type, $tokens, array $data = array(), array $options = array()) {
-  module_load_include('inc', 'comment_notify', 'comment_notify');
-  
-  // Add the tokens for unsubscribe links
-  if ($type != "comment" ||!isset($data['comment'])) {
-    return;
-  }
-  $cid = $data['comment']->cid;
-  $hash = comment_notify_get_notify_hash($cid);
-  if (!$hash) {
-    return;
-  }
-  $replacements = array();
-  $replacements['comment:unsubscribe_url'] = url('comment_notify/disable/' . $hash, array('absolute' => TRUE));
-  return $replacements;
-
 }
 
