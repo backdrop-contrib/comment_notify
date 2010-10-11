@@ -43,7 +43,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     $this->node = $this->drupalCreateNode(array('type' => 'article', 'promote' => NODE_PROMOTED, 'comment' => COMMENT_NODE_OPEN));
 
     // Allow anonymous users to post comments and get notifications.
-    user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access comments', 'access content', 'post comments', 'post comments without approval', 'subscribe to comments'));
+    user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access comments', 'access content', 'post comments', 'skip comment approval', 'subscribe to comments'));
     $this->drupalLogout();
 
     // Notify type 1 - All comments on the node.
@@ -117,7 +117,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
     }
 
     $this->drupalPost('node/' . $node->nid, $edit, t('Save'));
-    
+
     $match = array();
     // Get comment ID
     preg_match('/#comment-([^"]+)/', $this->getURL(), $match);
