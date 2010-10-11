@@ -370,7 +370,7 @@ function comment_notify_user_update(&$edit, $account, $category) {
 
 }
 
-function comment_notify_user_load(&$users) {
+function comment_notify_user_load($users) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
   
   // @todo: Why would we want to load this on every user load?
