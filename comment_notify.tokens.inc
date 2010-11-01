@@ -40,7 +40,7 @@ function comment_notify_tokens($type, $tokens, array $data = array(), array $opt
       switch ($name) {
         case 'unsubscribe-url':
           module_load_include('inc', 'comment_notify', 'comment_notify');
-          if ($hash = comment_notify_get_notify_hash($cid)) {
+          if ($hash = comment_notify_get_notify_hash($comment->cid)) {
             $replacements[$original] = url('comment_notify/disable/' . $hash, $url_options);
           }
           break;
