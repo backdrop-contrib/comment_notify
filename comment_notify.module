@@ -399,6 +399,7 @@ function _comment_notify_mailalert($comment) {
   global $language;
   global $base_url;
   global $user;
+  $initial_language = $language;
 
   $nid = $comment->nid;
   $cid = $comment->cid;
@@ -408,13 +409,6 @@ function _comment_notify_mailalert($comment) {
   // notification.
   if (comment_notify_is_notification_already_sent($cid)) {
     return;
-  }
-
-  $initial_language = $language;
-
-  if (function_exists('locale')) {
-    $languages = locale_language_list();
-    $languages = $languages['name'];
   }
 
   $node = node_load($nid);
@@ -493,10 +487,6 @@ function _comment_notify_mailalert($comment) {
         $message[$k] = token_replace(t($v), array('comment' => $comment, 'node' => $node, 'user' => $user));
       }
 
-      //      array(
-      //          '!link1' => url('comment_notify/disable/'. $alert->notify_hash, array('absolute' => TRUE))
-      //      )
-
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
       $sent_to[] = $mail;
 
@@ -511,15 +501,15 @@ function _comment_notify_mailalert($comment) {
       // Add an entry to the watchdog log.
       watchdog(
         'comment_notify',
-        'Notified: !user_mail',
-      array('!user_mail' => $user_mail),
-      WATCHDOG_NOTICE,
-      l(t('source comment'), 'node/' . $nid, array(
-          'fragment' => 'comment-' . $alert->cid,
-      ))
+        'Notified: @user_mail',
+        array('@user_mail' => $user_mail),
+          WATCHDOG_NOTICE,
+          l(t('source comment'), 'node/' . $nid, array(
+            'fragment' => 'comment-' . $alert->cid,
+          ))
       );
 
-      // revert to previous (site default) locale
+      // Revert to previous (site default) locale.
       $language = $initial_language;
     }
   }
