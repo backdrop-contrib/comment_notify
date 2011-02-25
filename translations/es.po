@@ -1,4 +1,3 @@
-# $Id$
 #
 # Spanish translation of Drupal (general)
 # Copyright 2009 Marco Antonio Villegas Vega <marvil07@gmail.com>

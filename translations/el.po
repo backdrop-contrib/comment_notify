@@ -1,6 +1,5 @@
 # Vasileios Lourdas <drupal@lourdas.name>, 2009.
 # translation of comment_notify to Ελληνικά
-# $Id$
 # Copyright 2008 Vasileios Lourdas <drupal@lourdas.name>
 # Generated from files:
 #  comment_notify.module,v 1.43 2008/12/16 13:15:57 greggles
