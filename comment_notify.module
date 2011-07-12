@@ -14,7 +14,7 @@ define('COMMENT_NOTIFY_COMMENT', 2);
 define('AUTHOR_MAILTEXT',
 'Hi [comment:node:author],
 
-You have received a comment on: "[node:title]"
+You have received a comment on: "[comment:node:title]"
 
 ----
 [comment:title]
@@ -32,9 +32,9 @@ disable this by logging in and changing the settings on your user account at
 [site:url]');
 
 define('DEFAULT_MAILTEXT',
-'Hi [user:name],
+'Hi [comment-subscribed:author],
 
-[comment:name] has commented on: "[node:title]"
+[comment:author] has commented on: "[comment:node:title]"
 
 ----
 [comment:title]
@@ -45,7 +45,7 @@ You can view the comment at the following url
 [comment:url]
 
 You can stop receiving emails when someone replies to this post,
-by going to [comment:unsubscribe-url]
+by going to [comment-subscribed:unsubscribe-url]
 
 You can set up auto-following feature for all future posts
 by creating your own user with a few clicks here [site:login-url]
@@ -219,7 +219,6 @@ function comment_notify_disable_page($hash) {
   }
   return ' ';
 }
-
 
 function comment_notify_comment_validate($comment) {
   global $user;
@@ -438,7 +437,7 @@ function _comment_notify_mailalert($comment) {
       'body'  => comment_notify_variable_registry_get('node_notify_default_mailtext'), //JS @todo:change this.
     );
     foreach ($raw_values as $k => $v) {
-      $message[$k] = token_replace(t($v), array('comment' => $comment, 'node' => $node, 'user' => $user));
+      $message[$k] = token_replace(t($v), array('comment' => $comment));
     }
 
     drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
@@ -453,8 +452,10 @@ function _comment_notify_mailalert($comment) {
   $watchers = comment_notify_get_watchers($nid);
 
   foreach ($watchers as $alert) {
-    $umail = empty($alert->umail) ? $alert->uinit : $alert->umail;
-    $mail = empty($alert->cmail) ? $umail : $alert->cmail;
+    // If the user is not anonymous, always load the current e-mail address
+    // from his or her user account instead of trusting $comment->mail.
+    $recipient_user = !empty($alert->uid) ? user_load($alert->uid) : drupal_anonymous_user();
+    $mail = !empty($recipient_user->mail) ? $recipient_user->mail : $alert->cmail;
 
     $relevant_thread = drupal_substr($thread, 0, drupal_strlen($alert->thread) -1);
     if ($alert->notify == COMMENT_NOTIFY_COMMENT && strcmp($relevant_thread . '/', $alert->thread) != 0) {
@@ -464,14 +465,8 @@ function _comment_notify_mailalert($comment) {
     if ($mail != $comment_mail && !in_array($mail, $sent_to) && ($alert->uid != $comment->uid || $alert->uid == 0)) {
 
       $message = array();
-      if (!empty($alert->uid)) {
-        $recipient_user = user_load($alert->uid);
-        $language = user_preferred_language($recipient_user);
-      }
-      else {
-        $language = language_default();
-        $recipient_user = drupal_anonymous_user();
-      }
+      $language = !empty($alert->uid) ? user_preferred_language($recipient_user) : language_default();
+
       // Make sure they have access to this node before showing a bunch of node information.
       if (!node_access('view', $node, $recipient_user)) {
         continue;
@@ -483,7 +478,7 @@ function _comment_notify_mailalert($comment) {
       );
 
       foreach ($raw_values as $k => $v) {
-        $message[$k] = token_replace(t($v), array('comment' => $comment, 'node' => $node, 'user' => $user));
+        $message[$k] = token_replace(t($v), array('comment' => $comment, 'comment-subscribed' => $alert));
       }
 
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
@@ -639,7 +634,9 @@ function comment_notify_settings() {
     '#default_value' => comment_notify_variable_registry_get('comment_notify_default_mailtext'),
     '#return_value' => 1,
     '#cols' => 80,
-    '#rows' => 15
+    '#rows' => 15,
+    '#token_types' => array('comment'),
+    '#element_validate' => array('token_element_validate'),
   );
 
   $form['comment_notify_settings']['comment_notify_node_notify_default_mailtext'] = array(
@@ -648,7 +645,9 @@ function comment_notify_settings() {
     '#default_value' => comment_notify_variable_registry_get('node_notify_default_mailtext'),
      '#return_value' => 1,
      '#cols' => 80,
-     '#rows' => 15
+     '#rows' => 15,
+     '#token_types' => array('comment'),
+     '#element_validate' => array('token_element_validate'),
   );
 
   $form['comment_notify_settings']['token_help'] = array(
@@ -668,5 +667,24 @@ function comment_notify_settings_validate($form, &$form_state) {
   }
   if (!$sum_enabled) {
     form_set_error('comment_notify_available_alerts', 'You must enable at least one subscription mode.');
+  }
+}
+
+/**
+ * Get the unsubscribe link for a comment subscriber.
+ *
+ * @param $comment
+ *   The subscribed comment object.
+ *
+ * @return
+ *   A string with the internal path to the unsubscribe link, ready to be
+ *   passed to the url() function.
+ *
+ * @see comment_notify_get_notify_hash().
+ */
+function comment_notify_get_unsubscribe_url($comment) {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  if ($hash = comment_notify_get_notify_hash($comment->cid)) {
+    return 'comment_notify/disable/' . $hash;
   }
 }
