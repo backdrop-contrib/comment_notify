@@ -108,31 +108,27 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 
   // If you want to hide this on your site see http://drupal.org/node/322482
   $form['notify_settings'] = array(
-      '#prefix' => '<div class="clear-block">',
-      '#suffix' => '</div>',
-      '#weight' => 0,
+    '#weight' => 0,
   );
 
   $form['notify_settings']['notify'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Notify me when new comments are posted'),
-      '#default_value' => (bool) $preference,
+    '#type' => 'checkbox',
+    '#title' => t('Notify me when new comments are posted'),
+    '#default_value' => (bool) $preference,
   );
 
-  if (count($available_options) > 1) {
-    $form['notify_settings']['notify_type'] = array(
-        '#type' => 'radios',
-        '#options' => $available_options,
-        '#default_value' => $preference,
-    );
+  $form['notify_settings']['notify_type'] = array(
+    '#type' => 'radios',
+    '#options' => $available_options,
+    '#default_value' => $preference,
+  );
+  if (count($available_options) == 1) {
+    $form['notify_settings']['notify_type']['#type'] = 'hidden';
+    $form['notify_settings']['notify_type']['#value'] = key($available_options);
   }
-  else {
-    $form['notify_settings']['notify_type'] = array(
-        '#type' => 'hidden',
-        '#value' => key($available_options),
-    );
-  }
-  $form['notify_settings']['notify_type']['#default_value'] = $preference;
+
+  // Otherwise, the submit buttons will jump below the node preview.
+  $form['actions']['#weight'] = 19;
 
   // If this is an existing comment we set the default value based on their selection last time.
   if ($form['cid']['#value'] != '') {
