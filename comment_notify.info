@@ -3,6 +3,7 @@ description = "Comment follow-up e-mail notification for anonymous as well as re
 dependencies[] = comment
 dependencies[] = token
 core = 7.x
+configure = admin/config/people/comment_notify
 files[] = comment_notify.install
 files[] = comment_notify.module
 files[] = comment_notify.tokens.inc
