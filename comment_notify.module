@@ -413,7 +413,7 @@ function _comment_notify_mailalert($comment) {
     return;
   }
 
-  if (!isset($comment->mail)) {
+  if (empty($comment->mail)) {
     $comment_account = user_load_by_name($comment->name);
     $comment_mail = $comment_account->mail;
   }
