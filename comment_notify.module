@@ -433,7 +433,7 @@ function _comment_notify_mailalert($comment) {
       'body'  => comment_notify_variable_registry_get('node_notify_default_mailtext'), //JS @todo:change this.
     );
     foreach ($raw_values as $k => $v) {
-      $message[$k] = token_replace(t($v), array('comment' => $comment));
+      $message[$k] = token_replace(t($v), array('comment' => $comment), array('sanitize' => FALSE));
     }
 
     drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
@@ -474,7 +474,7 @@ function _comment_notify_mailalert($comment) {
       );
 
       foreach ($raw_values as $k => $v) {
-        $message[$k] = token_replace(t($v), array('comment' => $comment, 'comment-subscribed' => $alert));
+        $message[$k] = token_replace(t($v), array('comment' => $comment, 'comment-subscribed' => $alert), array('sanitize' => FALSE));
       }
 
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
