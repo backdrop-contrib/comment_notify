@@ -322,9 +322,9 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   if (user_access('administer nodes') || $nodes) {
     $form['comment_notify_settings']['node_notify'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Receive node follow-up notification e-mails'),
+      '#title' => t('Receive content follow-up notification e-mails'),
       '#default_value' => isset($node_notify) ? $node_notify : comment_notify_variable_registry_get('node_notify_default_mailalert'),
-      '#description' => t('Check this box to receive an e-mail notification for follow-ups on your nodes (pages, forum topics, etc). You can not disable notifications for individual threads.')
+      '#description' => t('Check this box to receive an e-mail notification for follow-ups on your content. You can not disable notifications for individual threads.')
     );
   }
   else {
