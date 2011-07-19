@@ -684,3 +684,14 @@ function comment_notify_get_unsubscribe_url($comment) {
     return 'comment_notify/disable/' . $hash;
   }
 }
+/**
+ * Implements hook_field_extra_fields().
+ */
+function comment_notify_field_extra_fields() {
+  $extras['user']['user']['form']['comment_notify_settings'] = array(
+    'label' => t('Comment notify settings'),
+    'description' => t('User settings for Comment notify'),
+    'weight' => 4,
+  );
+  return $extras;
+}
