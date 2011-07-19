@@ -254,9 +254,9 @@ function comment_notify_comment_insert($comment) {
   // For new comments, we first build up a string to be used as the identifier for the alert.
   // This identifier is used to later unsubscribe the user or allow them to
   // potentially edit their comment / preferences if they are anonymous.
-  // The string is built from their mail and comment identifier.
-  $mail = empty($comment->mail) ? $user->mail : $comment->mail;
-  $notify_hash = drupal_get_token($mail . $comment->cid);
+  // The string is built with token and their host and comment identifier.
+  // It is stored and referenced, we really just need something unique/unguessable.
+  $notify_hash = drupal_get_token($comment->hostname . $comment->cid);
 
   if (!empty($comment->notify)) {
     $notify = $comment->notify_type;
