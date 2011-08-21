@@ -55,7 +55,7 @@ function comment_notify_schema() {
         'disp-width' => '11'),
       'notify' => array(
         'type' => 'int',
-        'description' => 'A boolean indicator for whether or not they subscribed: 1 means subscribed, 0 means not subscribed.',
+        'description' => 'An integer indicating the type of subscription: 0 means not subscribed, 1 means subscribed to all comments, and 2 means only subscribed to replies of this comment.',
         'size' => 'tiny',
         'not null' => TRUE,
         'disp-width' => '11'),
@@ -87,12 +87,14 @@ function comment_notify_schema() {
           'disp-width' => '11'),
         'node_notify' => array(
           'type' => 'int',
+          'description' => 'An integer indicating the default type of subscription: 0 means not subscribed, 1 means subscribed to all comments, and 2 means only subscribed to replies of this comment.',
           'size' => 'tiny',
           'not null' => TRUE,
           'default' => 0,
           'disp-width' => '11'),
         'comment_notify' => array(
           'type' => 'int',
+          'description' => 'An integer indicating the default type of subscription: 0 means not subscribed, 1 means subscribed to all comments, and 2 means only subscribed to replies of this comment.',
           'size' => 'tiny',
           'not null' => TRUE,
           'default' => 0,
