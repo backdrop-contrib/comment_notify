@@ -157,3 +157,10 @@ function comment_notify_update_7003() {
   }
   return 'Comment notify token strings updated.';
 }
+
+/**
+ * Fix a missing default causes warnings for Postgresql and some MySQL.
+ */
+function comment_notify_update_7004() {
+  db_change_field('comment_notify', 'notified', 'notified',  array('type' => 'int', 'size' => 'small', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+}
