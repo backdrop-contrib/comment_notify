@@ -455,7 +455,6 @@ function _comment_notify_mailalert($comment) {
   // For "reply to my comments" notifications, figure out what thread this is.
   $thread = comment_notify_get_thread($cid);
 
-  // TODO? the original big query had stuff making sure the mail was populated and contained .+@.+ Perhaps check for that here and set notify = 0 if that is the case for this cid
   // Get the list of commenters to notify.
   $watchers = comment_notify_get_watchers($nid);
 
