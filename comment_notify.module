@@ -93,7 +93,6 @@ function _comment_notify_options() {
 
 
 function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) {
-
   global $user;
   if (!(user_access('subscribe to comments') || user_access('administer comments'))) {
     return;
@@ -120,7 +119,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 
   // If you want to hide this on your site see http://drupal.org/node/322482
   $form['notify_settings'] = array(
-    '#weight' => 0,
+    '#weight' => 19,
   );
 
   $form['notify_settings']['notify'] = array(
