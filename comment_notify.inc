@@ -339,7 +339,6 @@ function comment_notify_variable_registry_get($name) {
   $variables['node_notify_default_mailtext'] = AUTHOR_MAILTEXT;
   $variables['default_registered_mailalert'] = COMMENT_NOTIFY_DISABLED;
   $variables['node_notify_default_mailalert'] = 0;
-  $variables['comment_notify_default_registered_mailalert'] = COMMENT_NOTIFY_DISABLED;
   $variables['watcher_subject'] = '[site:name] :: new comment on [comment:node:title]';
   $variables['comment_notify_default_mailtext'] = DEFAULT_MAILTEXT;
   $variables['node_types'] = array('article' => 'article');

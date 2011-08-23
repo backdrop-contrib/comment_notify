@@ -351,7 +351,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   $form['comment_notify_settings']['comment_notify'] = array(
     '#type' => 'select',
     '#title' => t('Receive comment follow-up notification e-mails'),
-    '#default_value' => isset($comment_notify) ? array($comment_notify) : array(comment_notify_variable_registry_get('comment_notify_default_registered_mailalert')),
+    '#default_value' => isset($comment_notify) ? array($comment_notify) : array(comment_notify_variable_registry_get('default_registered_mailalert')),
     '#options' => $available_options,
     '#description' => t("Check this box to receive e-mail notification for follow-up comments to comments you posted. You can later disable this on a post-by-post basis... so if you leave this to YES, you can still disable follow-up notifications for comments you don't want follow-up mails anymore - i.e. for very popular posts.")
   );
