@@ -540,8 +540,7 @@ function _comment_notify_mailalert($comment) {
   }
   // Record that a notification was sent for this comment so that
   // notifications aren't sent again if the comment is later edited.
-
-  comment_notify_mark_comment_as_notified($cid);
+  comment_notify_mark_comment_as_notified($comment);
 }
 
 /**
