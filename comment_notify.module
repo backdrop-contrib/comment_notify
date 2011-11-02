@@ -273,7 +273,8 @@ function comment_notify_comment_insert($comment) {
   // potentially edit their comment / preferences if they are anonymous.
   // The string is built with token and their host and comment identifier.
   // It is stored and referenced, we really just need something unique/unguessable.
-  $notify_hash = drupal_get_token($comment->hostname . $comment->cid);
+  $hostname = isset($comment->hostname) ? $comment->hostname : (isset($user->hostname) ? $user->hostname : '');
+  $notify_hash = drupal_get_token($hostname . $comment->cid);
 
   if (!empty($comment->notify)) {
     $notify = $comment->notify_type;
@@ -457,7 +458,7 @@ function _comment_notify_mailalert($comment) {
 
   if (empty($comment->mail)) {
     $comment_account = user_load_by_name($comment->name);
-    $comment_mail = $comment_account->mail;
+    $comment_mail = isset($comment_account->mail) ? $comment_account->mail : '';
   }
   else {
     $comment_mail = $comment->mail;
@@ -483,7 +484,7 @@ function _comment_notify_mailalert($comment) {
   }
 
   // For "reply to my comments" notifications, figure out what thread this is.
-  $thread = $comment->thread;
+  $thread = isset($comment->thread) ? $comment->thread : '';
 
   // Get the list of commenters to notify.
   $watchers = comment_notify_get_watchers($nid);
