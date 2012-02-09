@@ -393,7 +393,7 @@ function comment_notify_user_load($users) {
   return;
 }
 
-function comment_notify_user_cancel(&$edit, $account, $method) {
+function comment_notify_user_cancel($edit, $account, $method) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
   comment_notify_delete_user_notification_setting($account->uid);
 }
