@@ -280,7 +280,7 @@ function comment_notify_unsubscribe_by_hash($hash) {
  */
 function comment_notify_variable_registry_get($name) {
   $variables = array();
-  $variables['author_subject'] = '[site:name] :: new comment for your post.';
+  $variables['author_subject'] = t('[site:name] :: new comment for your post.');
   $variables['available_alerts'] = array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT);
   $variables['default_anon_mailalert'] = COMMENT_NOTIFY_NODE;
   $variables['node_notify_default_mailtext'] = AUTHOR_MAILTEXT;
