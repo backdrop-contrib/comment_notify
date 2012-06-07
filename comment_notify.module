@@ -131,7 +131,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
   $form['notify_settings']['notify_type'] = array(
     '#type' => 'radios',
     '#options' => $available_options,
-    '#default_value' => $preference,
+    '#default_value' => $preference ? $preference : NULL,
   );
   if (count($available_options) == 1) {
     $form['notify_settings']['notify_type']['#type'] = 'hidden';

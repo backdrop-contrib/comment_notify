@@ -136,7 +136,7 @@ function comment_notify_add_notification($cid, $notify, $notify_hash) {
   return (bool)db_insert('comment_notify')
     ->fields(array(
       'cid' => $cid,
-      'notify' => $notify,
+      'notify' => $notify === NULL ? 0 : $notify,
       'notify_hash' => $notify_hash,
     ))
     ->execute();
@@ -164,7 +164,7 @@ function comment_notify_remove_all_notifications($cid) {
 function comment_notify_update_notification($cid, $notify) {
   return (bool)db_update('comment_notify')
     ->fields(array(
-      'notify' => $notify,
+      'notify' => $notify === NULL ? 0 : $notify,
     ))
     ->condition('cid', $cid)
     ->execute();
