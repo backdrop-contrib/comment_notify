@@ -131,7 +131,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
   $form['notify_settings']['notify_type'] = array(
     '#type' => 'radios',
     '#options' => $available_options,
-    '#default_value' => $preference ? $preference : NULL,
+    '#default_value' => $preference ? $preference : 1,
   );
   if (count($available_options) == 1) {
     $form['notify_settings']['notify_type']['#type'] = 'hidden';
@@ -146,7 +146,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
     $notify = comment_notify_get_notification_type($form['cid']['#value']);
     $form['notify_settings']['notify']['#default_value'] = (bool) $notify;
     if (count($available_options) > 1) {
-      $form['notify_settings']['notify_type']['#default_value'] = $notify;
+      $form['notify_settings']['notify_type']['#default_value'] = empty($notify) ? COMMENT_NOTIFY_NODE : $notify;
     }
     else {
       $form['notify_settings']['notify_type']['#default_value'] = key($available_options);
