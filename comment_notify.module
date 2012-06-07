@@ -480,7 +480,7 @@ function _comment_notify_mailalert($comment) {
     }
 
     drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
-    $sent_to[] = $author->mail;
+    $sent_to[] = strtolower($author->mail);
   }
 
   // For "reply to my comments" notifications, figure out what thread this is.
@@ -500,7 +500,7 @@ function _comment_notify_mailalert($comment) {
       continue;
     }
 
-    if ($mail != $comment_mail && !in_array($mail, $sent_to) && ($alert->uid != $comment->uid || $alert->uid == 0)) {
+    if ($mail != $comment_mail && !in_array(strtolower($mail), $sent_to) && ($alert->uid != $comment->uid || $alert->uid == 0)) {
 
       $message = array();
       $language = !empty($alert->uid) ? user_preferred_language($recipient_user) : language_default();
@@ -520,7 +520,7 @@ function _comment_notify_mailalert($comment) {
       }
 
       drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
-      $sent_to[] = $mail;
+      $sent_to[] = strtolower($mail);
 
       // Make the mail link to user's /edit, unless it's an anonymous user.
       if ($alert->uid != 0) {
