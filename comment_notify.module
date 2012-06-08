@@ -468,7 +468,7 @@ function _comment_notify_mailalert($comment) {
   // Send to a subscribed author if they are not the current commenter
   $author = user_load($node->uid);
 
-  if (!empty($author->comment_notify_settings->node_notify) && $author->comment_notify_settings->node_notify == 1 && $user->uid != $author->uid && node_access('view', $node, $author)) {
+  if (((!empty($author->comment_notify_settings->node_notify) && $author->comment_notify_settings->node_notify == 1) || (comment_notify_variable_registry_get('node_notify_default_mailalert') == 1 && empty($author->comment_notify_settings->node_notify))) && $user->uid != $author->uid && node_access('view', $node, $author)) {
     // Get the author's language.
     $language = user_preferred_language($author);
     $raw_values = array(
@@ -734,3 +734,4 @@ function comment_notify_field_extra_fields() {
   );
   return $extras;
 }
+
