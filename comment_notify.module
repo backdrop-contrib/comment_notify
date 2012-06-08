@@ -118,10 +118,6 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
   $preference = comment_notify_get_user_comment_notify_preference($user->uid);
 
   // If you want to hide this on your site see http://drupal.org/node/322482
-  $form['notify_settings'] = array(
-    '#weight' => 19,
-  );
-
   $form['notify_settings']['notify'] = array(
     '#type' => 'checkbox',
     '#title' => t('Notify me when new comments are posted'),
@@ -727,6 +723,19 @@ function comment_notify_get_unsubscribe_url($comment) {
  * Implements hook_field_extra_fields().
  */
 function comment_notify_field_extra_fields() {
+  module_load_include('inc', 'comment_notify', 'comment_notify');
+  $extras = array();
+
+  foreach (comment_notify_variable_registry_get('node_types') as $node_type) {
+    if (isset($node_type)) {
+      $extras['comment']['comment_node_' . $node_type]['form']['comment_notify_settings'] = array(
+        'label' => t('Comment notify settings'),
+        'description' => t('@node_type settings for Comment notify', array('@node_type' => ucwords($node_type))),
+        'weight' => 1,
+      );
+    }
+  }
+
   $extras['user']['user']['form']['comment_notify_settings'] = array(
     'label' => t('Comment notify settings'),
     'description' => t('User settings for Comment notify'),
