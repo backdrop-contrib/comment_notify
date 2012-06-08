@@ -1,4 +1,4 @@
-name = Comment notify
+name = Comment Notify
 description = "Comment follow-up e-mail notification for anonymous as well as registered users."
 dependencies[] = comment
 dependencies[] = token

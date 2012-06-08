@@ -221,7 +221,7 @@ function comment_notify_mark_comment_as_notified($comment) {
 /**
  * Unsubscribe all comment notification requests associated with an email.
  *
- * If the email belongs to a user, it will unsubscribe all of their comment notify records.
+ * If the email belongs to a user, it will unsubscribe all of their Comment Notify records.
  * If it does not, then it will unsubscribe all anonymous users.
  *
  * @param string $mail

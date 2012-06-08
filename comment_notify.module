@@ -172,7 +172,7 @@ function comment_notify_permission() {
 function comment_notify_menu() {
 
   $items['admin/config/people/comment_notify'] = array(
-    'title' => 'Comment notify',
+    'title' => 'Comment Notify',
     'description' => 'Configure settings for e-mails about new comments.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('comment_notify_settings'),
@@ -729,16 +729,16 @@ function comment_notify_field_extra_fields() {
   foreach (comment_notify_variable_registry_get('node_types') as $node_type) {
     if (isset($node_type)) {
       $extras['comment']['comment_node_' . $node_type]['form']['comment_notify_settings'] = array(
-        'label' => t('Comment notify settings'),
-        'description' => t('@node_type settings for Comment notify', array('@node_type' => ucwords($node_type))),
+        'label' => t('Comment Notify settings'),
+        'description' => t('@node_type settings for Comment Notify', array('@node_type' => ucwords($node_type))),
         'weight' => 1,
       );
     }
   }
 
   $extras['user']['user']['form']['comment_notify_settings'] = array(
-    'label' => t('Comment notify settings'),
-    'description' => t('User settings for Comment notify'),
+    'label' => t('Comment Notify settings'),
+    'description' => t('User settings for Comment Notify'),
     'weight' => 4,
   );
   return $extras;

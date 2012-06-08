@@ -157,7 +157,7 @@ function comment_notify_update_7003() {
       variable_set($variable, $text);
     }
   }
-  return 'Comment notify token strings updated.';
+  return 'Comment Notify token strings updated.';
 }
 
 /**
