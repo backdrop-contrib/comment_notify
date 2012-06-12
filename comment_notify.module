@@ -312,7 +312,7 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   }
 
   $user = $form['#user'];
-  if ($user->comment_notify_settings) {
+  if (!empty($user->comment_notify_settings)) {
     $node_notify = $user->comment_notify_settings->node_notify;
     $comment_notify = $user->comment_notify_settings->comment_notify;
   }
