@@ -244,7 +244,7 @@ function comment_notify_comment_update($comment) {
 
   // Take the status of the "notify" checkbox if they unchecked it.
   if (empty($comment->notify)) {
-    $status = $comment->notify;
+    $status = COMMENT_NOTIFY_DISABLED;
   }
   else {
     $status = $comment->notify_type;
@@ -411,6 +411,7 @@ function comment_notify_comment_load($comments) {
   $records = $query->execute()->fetchAllAssoc('cid');
   foreach ($records as $cid => $record) {
     $comments[$cid]->notify = $record->notify;
+    $comments[$cid]->notify_type = $record->notify;
     $comments[$cid]->notify_hash = $record->notify_hash;
     $comments[$cid]->notified = $record->notified;
     $comments[$cid]->cmail = $record->cmail;
