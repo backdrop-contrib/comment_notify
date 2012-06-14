@@ -211,12 +211,11 @@ function comment_notify_menu() {
 function comment_notify_disable_page($hash) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
   if (comment_notify_unsubscribe_by_hash($hash)) {
-    drupal_set_message(t('Your comment follow-up notification for this post was disabled. Thanks.'));
+    return(t('Your comment follow-up notification for this post was disabled. Thanks.'));
   }
   else {
-    drupal_set_message(t('Sorry, there was a problem unsubscribing from notifications.'));
+    return(t('Sorry, there was a problem unsubscribing from notifications.'));
   }
-  return ' ';
 }
 
 function comment_notify_comment_validate($comment) {
