@@ -256,6 +256,9 @@ function comment_notify_comment_update($comment) {
 
 }
 
+/**
+ * Implements hook_comment_insert().
+ */
 function comment_notify_comment_insert($comment) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
 
