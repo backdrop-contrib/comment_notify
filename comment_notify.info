@@ -6,6 +6,7 @@ core = 7.x
 configure = admin/config/people/comment_notify
 files[] = comment_notify.install
 files[] = comment_notify.module
+files[] = comment_notify.migrate.inc
 files[] = comment_notify.tokens.inc
 files[] = comment_notify.inc
 files[] = comment_notify.test
