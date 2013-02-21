@@ -31,7 +31,24 @@ INSTALLATION
 The module includes a feature to notify the node author of all comments on 
 their nodes. To enable this go to "My account" > Edit (e.g. user/1/edit)
 and change the settings there, i.e., "Comment follow-up notification settings"
-  
+
+TEMPLATE TRANSLATION
+--------------------
+
+Notification templates are passed through t() before being added to the
+email's body. Therefore, for you to translate them to other languates you
+need to:
+
+1. Enable the Locale module.
+
+2. Choose a node in which you are not the auther and has comments and comment
+on it. This will send an email to the author and other commenters.
+
+3. Open the Translation Interface, located at
+   admin/config/regional/translate/translate
+
+4. Search for the template strings and add the translations.
+
 OPTIONAL MODULES
 ----------------
 
@@ -41,7 +58,8 @@ One option is to use the Queue Mail module
 http://drupal.org/project/queue_mail
 
 COMPATIBILITY NOTE
------------------------- 
+------------------
+
 Comment Notify is not built to work on sites where other notification related 
 modules are installed (modules like Actions, Notify, Subscriptions, and 
 Organic Groups are popular examples). If you install both Comment Notify and
