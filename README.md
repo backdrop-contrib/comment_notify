@@ -90,4 +90,4 @@ Credits
 
 Ported to Backdrop by Herb v/d Dool (https://github.com/herbdool/)
 
-This module was originally written for Drupal (https://drupal.org/project/comment_notify). Drupal maintainers are: [](https://www.drupal.org/u/).
+This module was originally written for Drupal (https://drupal.org/project/comment_notify). Drupal maintainers are: [greggles](https://www.drupal.org/u/greggles).
