@@ -37,9 +37,7 @@ function comment_notify_install() {
  * Implements hook_uninstall().
  */
 function comment_notify_uninstall() {
-  variable_del('node_notify_default_mailtext');
-  db_delete('variable')
-    ->where('name', "comment_notify_%", 'LIKE');
+
 }
 
 /**
@@ -109,76 +107,29 @@ function comment_notify_schema() {
 }
 
 /**
- * Head 2 head update for the new size of the hash field.
+ * Implements hook_update_last_removed().
  */
-function comment_notify_update_7002() {
-  $new_spec = array(
-    'type' => 'varchar',
-    'description' => 'A hash of unique information about the commenter.  Used for unsubscribing users.',
-    'length' => '128',
-    'not null' => TRUE,
-    'default' => ''
-  );
-  $keys = array(
-    'indexes' => array('notify_hash' => array('notify_hash')),
-  );
-  db_drop_index('comment_notify', 'notify_hash');
-  db_change_field('comment_notify', 'notify_hash', 'notify_hash', $new_spec, $keys);
+function comment_notify_update_last_removed() {
+  return 7005;
 }
 
 /**
- * Fix tokens in comment subscriber e-mail template.
+ * Move book settings from variables to config.
  */
-function comment_notify_update_7003() {
-  $variables = array(
-    'comment_notify_author_subject' => 'author',
-    'comment_notify_node_notify_default_mailtext' => 'author',
-    'comment_notify_watcher_subject' => 'commenter',
-    'comment_notify_comment_notify_default_mailtext' => 'commenter',
-  );
-  foreach ($variables as $variable => $context) {
-    // If the variable is using the default value, this will return NULL and we
-    // can skip it.
-    if ($text = variable_get($variable)) {
-      $replacements = array(
-        '[comment:unsubscribe-url]' => '[comment-subscribed:unsubscribe-url]',
-        '[comment:name]' => '[comment:author]',
-        '[node:' => '[comment:node:', // Replace all node tokens with comment:node.
-      );
-      if ($context == 'author') {
-        $replacements['[user:name]'] = '[comment:node:author]';
-        $replacements['[user:'] = '[comment:node:author:';
-      }
-      elseif ($context == 'commenter') {
-        $replacements['[user:name]'] = '[comment-subscribed:author]';
-        $replacements['[user:'] = '[comment-subscribed:author:';
-      }
-      $text = strtr($text, $replacements);
-      variable_set($variable, $text);
-    }
-  }
-  return 'Comment Notify token strings updated.';
+function comment_notify_update_1000() {
+  // Migrate variables to config.
+  $config = config('comment_notify.settings');
+  //$config->set('book_allowed_types', update_variable_get('book_allowed_types', array('book')));
+  //$config->save();
+
+  // Delete variables.
+//  update_variable_del('book_allowed_types');
+
 }
 
-/**
- * Fix a missing default causes warnings for Postgresql and some MySQL.
+/*
+ * 'comment_notify_node_types', array($node->type => TRUE)
+ * 'comment_notify_node_types', backdrop_map_assoc(array($node->type)
+ * "comment_notify_" . $name, $variables[$name]
+ * comment_notify.settings', 'available_alerts', backdrop_map_assoc(array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)
  */
-function comment_notify_update_7004() {
-  db_change_field('comment_notify', 'notified', 'notified',  array('type' => 'int', 'size' => 'small', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
-}
-
-/**
- * Fix minor schema inconsistencies caused by the last update.
- */
-function comment_notify_update_7005() {
-  // Previous update altered size and unsigned unnecessarily.
-  $notified_field = array(
-    'type' => 'int',
-    'description' => 'A boolean indicator for whether or not a notification for the comment has been sent: 1 means yes, 0 means no.',
-    'size' => 'tiny',
-    'not null' => TRUE,
-    'default' => 0,
-    'disp-width' => '11',
-  );
-  db_change_field('comment_notify', 'notified', 'notified', $notified_field);
-}

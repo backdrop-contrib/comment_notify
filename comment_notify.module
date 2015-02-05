@@ -61,13 +61,13 @@ function comment_notify_init() {
   // Add on every page - they are both very small so it's better to add
   // everywhere than force a second file on some pages.
   $options = array('every_page' => TRUE);
-  $path = drupal_get_path('module', 'comment_notify');
-  drupal_add_css($path . '/comment_notify.css', $options);
+  $path = backdrop_get_path('module', 'comment_notify');
+  backdrop_add_css($path . '/comment_notify.css', $options);
 
   // We only add the JS if more than one subscription mode is enabled.
   $available_options = _comment_notify_options();
   if (count($available_options) > 1) {
-    drupal_add_js($path . '/comment_notify.js', $options);
+    backdrop_add_js($path . '/comment_notify.js', $options);
   }
 }
 
@@ -81,7 +81,7 @@ function _comment_notify_options() {
   );
 
   $available_options = array();
-  $options = variable_get('comment_notify_available_alerts', drupal_map_assoc(array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)));
+  $options = config_get('comment_notify.settings', 'available_alerts');
   foreach ($options as $key => $available) {
     if ($key == $available) {
       $available_options[$available] = $total_options[$available];
@@ -100,7 +100,7 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 
   // Only add the checkbox if this is an enabled content type
   $node = node_load($form['nid']['#value'] ? $form['nid']['#value'] : $form['nid']['#default_value']);
-  $enabled_types = variable_get('comment_notify_node_types', drupal_map_assoc(array($node->type)));
+  $enabled_types = config_get('comment_notify', 'node_types');
   if (empty($enabled_types[$node->type])) {
     return;
   }
@@ -171,7 +171,7 @@ function comment_notify_menu() {
   $items['admin/config/people/comment_notify'] = array(
     'title' => 'Comment Notify',
     'description' => 'Configure settings for e-mails about new comments.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('comment_notify_settings'),
     'access arguments' => array('administer comment notify'),
     'type' => MENU_NORMAL_ITEM,
@@ -179,7 +179,7 @@ function comment_notify_menu() {
   $items['admin/config/people/comment_notify/settings'] = array(
     'title' => 'Settings',
     'description' => 'Configure settings for e-mails about new comments.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('comment_notify_settings'),
     'access arguments' => array('administer comment notify'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -189,7 +189,7 @@ function comment_notify_menu() {
     'title' => 'Unsubscribe',
     'description' => 'Unsubscribe an email from all notifications.',
     'weight' => 2,
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('comment_notify_unsubscribe'),
     'access arguments' => array('administer comment notify'),
     'type' => MENU_LOCAL_TASK,
@@ -269,7 +269,7 @@ function comment_notify_comment_insert($comment) {
   // The string is built with token and their host and comment identifier.
   // It is stored and referenced, we really just need something unique/unguessable.
   $hostname = isset($comment->hostname) ? $comment->hostname : (isset($user->hostname) ? $user->hostname : '');
-  $notify_hash = drupal_get_token($hostname . $comment->cid);
+  $notify_hash = backdrop_get_token($hostname . $comment->cid);
 
   if (!empty($comment->notify)) {
     $notify = $comment->notify_type;
@@ -447,7 +447,7 @@ function _comment_notify_mailalert($comment) {
   $node = node_load($nid);
 
   // No mails if this is not an enabled content type.
-  $enabled_types = variable_get('comment_notify_node_types', array($node->type => TRUE));
+  $enabled_types = config_get('comment_notify','node_types');
   if (empty($enabled_types[$node->type])) {
     return;
   }
@@ -477,7 +477,7 @@ function _comment_notify_mailalert($comment) {
       $message[$k] = token_replace(t($v), array('comment' => $comment), array('sanitize' => FALSE));
     }
 
-    drupal_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
+    backdrop_mail('comment_notify', 'comment_notify_mail', $author->mail, $language, $message);
     $sent_to[] = strtolower($author->mail);
   }
 
@@ -490,10 +490,10 @@ function _comment_notify_mailalert($comment) {
   foreach ($watchers as $alert) {
     // If the user is not anonymous, always load the current e-mail address
     // from his or her user account instead of trusting $comment->mail.
-    $recipient_user = !empty($alert->uid) ? user_load($alert->uid) : drupal_anonymous_user();
+    $recipient_user = !empty($alert->uid) ? user_load($alert->uid) : backdrop_anonymous_user();
     $mail = !empty($recipient_user->mail) ? $recipient_user->mail : $alert->cmail;
 
-    $relevant_thread = drupal_substr($thread, 0, drupal_strlen($alert->thread) -1);
+    $relevant_thread = backdrop_substr($thread, 0, backdrop_strlen($alert->thread) -1);
     if ($alert->notify == COMMENT_NOTIFY_COMMENT && strcmp($relevant_thread . '/', $alert->thread) != 0) {
       continue;
     }
@@ -517,7 +517,7 @@ function _comment_notify_mailalert($comment) {
         $message[$k] = token_replace(t($v), array('comment' => $comment, 'comment-subscribed' => $alert), array('sanitize' => FALSE));
       }
 
-      drupal_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
+      backdrop_mail('comment_notify', 'comment_notify_mail', $mail, $language, $message);
       $sent_to[] = strtolower($mail);
 
       // Make the mail link to user's /edit, unless it's an anonymous user.
@@ -581,10 +581,10 @@ function comment_notify_unsubscribe_submit($form, &$form_state) {
   $comments = comment_notify_unsubscribe_by_email($email);
   // Update the admin about the state of this comment notification subscription.
   if ($comments == 0) {
-    drupal_set_message(t("There were no active comment notifications for that email."));
+    backdrop_set_message(t("There were no active comment notifications for that email."));
   }
   else {
-    drupal_set_message(format_plural($comments, "Email unsubscribed from 1 comment notification.",
+    backdrop_set_message(format_plural($comments, "Email unsubscribed from 1 comment notification.",
       "Email unsubscribed from @count comment notifications."));
   }
 }
@@ -605,8 +605,8 @@ function comment_notify_settings() {
     $default[] = $type;
 
     // If they don't have the ability to leave contact info, then we make a report
-    if (isset($enabled_types[$type]) && $enabled_types[$type] && variable_get('comment_anonymous_' . $type, COMMENT_ANONYMOUS_MAYNOT_CONTACT) == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
-      $account = drupal_anonymous_user();
+    if (isset($enabled_types[$type]) && $enabled_types[$type] && config_get('node.type.' . $type, 'comment_anonymous_') == COMMENT_ANONYMOUS_MAYNOT_CONTACT) {
+      $account = backdrop_anonymous_user();
       if (user_access('subscribe to comments', $account)) {
         $anonymous_problems[] = l(t('@content-type', array('@content-type' => $name)), 'admin/structure/types/manage/' . $type);
       }
@@ -614,7 +614,7 @@ function comment_notify_settings() {
   }
 
   if (!empty($anonymous_problems)) {
-    drupal_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact information on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))), 'status', FALSE);
+    backdrop_set_message(t('Anonymous commenters have the permission to subscribe to comments but cannot leave their contact information on the following content types: !types.  You should either disable subscriptions on those types here, revoke the permission for anonymous users, or enable anonymous users to leave their contact information in the comment settings.', array('!types' => implode(', ', $anonymous_problems))), 'status', FALSE);
   }
 
   $form['comment_notify_settings']['comment_notify_node_types'] = array(
@@ -692,7 +692,15 @@ function comment_notify_settings() {
 
   $form['#validate'] = array('comment_notify_settings_validate');
 
-  return system_settings_form($form);
+  // Add a submit button
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+
+  // Return the form!
+  return $form;
 }
 
 function comment_notify_settings_validate($form, &$form_state) {
@@ -703,6 +711,23 @@ function comment_notify_settings_validate($form, &$form_state) {
   if (!$sum_enabled) {
     form_set_error('comment_notify_available_alerts', 'You must enable at least one subscription mode.');
   }
+}
+
+/*
+ * Submit for comment_notify_settings()
+ */
+function comment_notify_settings_submit($form, &$form_state) {
+debug($form_state['values']);
+  $config = config('comment_notify.settings');
+  $config->set('node_types', $form_state['values']['comment_notify_node_types']);
+  $config->set('available_alerts', $form_state['values']['comment_notify_available_alerts']);
+  $config->set('default_anon_mailalert', $form_state['values']['comment_notify_default_anon_mailalert']);
+  $config->set('default_registered_mailalert', $form_state['values']['comment_notify_default_registered_mailalert']);
+  $config->set('node_notify_default_mailalert', $form_state['values']['comment_notify_node_notify_default_mailalert']);
+  $config->set('comment_notify_default_mailtext', $form_state['values']['comment_notify_comment_notify_default_mailtext']);
+  $config->set('node_notify_default_mailtext', $form_state['values']['comment_notify_node_notify_default_mailtext']);
+  $config->save();
+  backdrop_set_message(t('The configuration options have been saved.'));
 }
 
 /**

@@ -14,14 +14,15 @@
  *  StdClass if found, else NULL
  */
 function comment_notify_get_user_notification_setting($uid) {
-  $users = &drupal_static(__FUNCTION__);
+  $users = &backdrop_static(__FUNCTION__);
   if (!isset($users[$uid])) {
     if (is_null($uid)) {
       throw new Exception('Cannot get user preference, uid missing');
     }
     // Handle anonymous users with defaults.
     if ($uid == 0) {
-      $users[0] = new stdClass();
+//      $users[0] = new stdClass();
+      $users[0] = entity_create('user', array('uid' => 0));
       $users[0]->comment_notify = comment_notify_variable_registry_get('default_registered_mailalert');
       $users[0]->node_notify = comment_notify_variable_registry_get('node_notify_default_mailalert');
     }
@@ -323,7 +324,14 @@ function comment_notify_variable_registry_get($name) {
 
   // Errors
   $variables['error_anonymous_email_missing'] = 'If you want to subscribe to comments you must supply a valid e-mail address.';
-  return variable_get("comment_notify_" . $name, $variables[$name]);
+
+  $config = config_get("comment_notify.settings", $name);
+  debug($config);
+
+  if (isset($config)) {
+    return $config;
+  }
+  return $variables[$name];
 }
 
 /**
@@ -334,5 +342,5 @@ function comment_notify_variable_registry_get($name) {
  * @return boolean
  */
 function comment_notify_variable_registry_set($name, $value) {
-  return variable_set("comment_notify_" . $name, $value);
+  return config_set("comment_notify.settings", $name, $value);
 }
