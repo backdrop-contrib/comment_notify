@@ -1,6 +1,6 @@
 (function ($) {
 
-Drupal.behaviors.commentNotify = {
+Backdrop.behaviors.commentNotify = {
   attach: function (context) {
     $('#edit-notify', context)
       .bind('change', function() {
