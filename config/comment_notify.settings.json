@@ -1,7 +1,6 @@
 {
     "_config_name": "comment_notify.settings",
     "node_types": {
-        "article": "article"
     },
     "available_alerts": {
         "1": "1",
