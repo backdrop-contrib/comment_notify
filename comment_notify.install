@@ -37,7 +37,7 @@ function comment_notify_install() {
  * Implements hook_uninstall().
  */
 function comment_notify_uninstall() {
-
+  backdrop_uninstall_schema('comment_notify');
 }
 
 /**
@@ -114,22 +114,75 @@ function comment_notify_update_last_removed() {
 }
 
 /**
- * Move book settings from variables to config.
+ * @defgroup updates-7.x-to-1.x Updates from 7.x to 1.x
+ * @{
+ * Update functions from Drupal 7.x to Backdrop CMS 1.x.
+ */
+
+/**
+ * Move comment_notify settings from variables to config.
  */
 function comment_notify_update_1000() {
   // Migrate variables to config.
   $config = config('comment_notify.settings');
-  //$config->set('book_allowed_types', update_variable_get('book_allowed_types', array('book')));
-  //$config->save();
+  $config->set('available_alerts', update_variable_get('comment_notify_available_alerts', array(1 => 1, 2 => 2)));
+  $config->set('default_anon_mailalert', update_variable_get('comment_notify_default_anon_mailalert', 1));
+  $config->set('default_registered_mailalert', update_variable_get('comment_notify_default_registered_mailalert', 0));
+  $config->set('node_notify_default_mailalert', update_variable_get('comment_notify_node_notify_default_mailalert', 0));
+  $config->set('node_types', update_variable_get('comment_notify_node_types', array('article' => 'article')));
+  $config->set('node_notify_default_mailtext', update_variable_get('comment_notify_node_notify_default_mailtext', 'Hi [comment:node:author],
+
+You have received a comment on: "[comment:node:title]"
+
+----
+[comment:title]
+[comment:body]
+----
+
+You can view the comment at the following url
+[comment:url]
+
+You will receive emails like this for all replies to your posts. You can
+disable this by logging in and changing the settings on your user account at
+[comment:node:author:edit-url].
+
+-- [site:name] team
+[site:url]'));
+  $config->set('comment_notify_default_mailtext', update_variable_get('comment_notify_comment_notify_default_mailtext', 'Hi [comment-subscribed:author],
+
+[comment:author] has commented on: "[comment:node:title]"
+
+----
+[comment:title]
+[comment:body]
+----
+
+You can view the comment at the following url
+[comment:url]
+
+You can stop receiving emails when someone replies to this post,
+by going to [comment-subscribed:unsubscribe-url]
+
+You can set up auto-following feature for all future posts
+by creating your own user with a few clicks here [site:login-url]
+
+-- [site:name] team
+[site:url]'));
+
+  $config->save();
 
   // Delete variables.
-//  update_variable_del('book_allowed_types');
+  update_variable_del('comment_notify_available_alerts');
+  update_variable_del('comment_notify_comment_notify_default_mailtext');
+  update_variable_del('comment_notify_default_anon_mailalert');
+  update_variable_del('comment_notify_default_registered_mailalert');
+  update_variable_del('comment_notify_node_notify_default_mailalert');
+  update_variable_del('comment_notify_node_notify_default_mailtext');
+  update_variable_del('comment_notify_node_types');
 
 }
 
-/*
- * 'comment_notify_node_types', array($node->type => TRUE)
- * 'comment_notify_node_types', backdrop_map_assoc(array($node->type)
- * "comment_notify_" . $name, $variables[$name]
- * comment_notify.settings', 'available_alerts', backdrop_map_assoc(array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT)
+/**
+ * @} End of "defgroup updates-7.x-to-1.x"
+ * The next series of updates should start at 2000.
  */

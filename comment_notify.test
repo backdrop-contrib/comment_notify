@@ -4,7 +4,7 @@
  * @file
  * Creates tests for comment_notify module.
  */
-class CommentNotifyTestCase extends DrupalWebTestCase {
+class CommentNotifyTestCase extends BackdropWebTestCase {
   /**
    * Implementation of getInfo().
    */
@@ -31,28 +31,24 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
   function testCommentNotifyAnonymousUserFunctionalTest() {
     // Code that does something to be tested.
     // Create and login administrative user.
-    $admin_user = $this->drupalCreateUser(array('administer comment notify', 'administer permissions', 'administer comments'));
-    $this->drupalLogin($admin_user);
+    $admin_user = $this->backdropCreateUser(array('administer comment notify', 'administer permissions', 'administer comments'));
+    $this->backdropLogin($admin_user);
 
     // Enable comment notify on this node and allow anonymous information in comments.
     variable_set('comment_notify_node_types', array('article' => 'article', 'page' => 0));
     variable_set('comment_anonymous_article', '1');
 
     // Create a node with comments allowed.
-    $this->node = $this->drupalCreateNode(array('type' => 'article', 'promote' => NODE_PROMOTED, 'comment' => COMMENT_NODE_OPEN));
+    $this->node = $this->backdropCreateNode(array('type' => 'article', 'promote' => NODE_PROMOTED, 'comment' => COMMENT_NODE_OPEN));
 
     // Allow anonymous users to post comments and get notifications.
     user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access comments', 'access content', 'post comments', 'skip comment approval', 'subscribe to comments'));
-    $this->drupalLogout();
+    $this->backdropLogout();
 
     // Notify type 1 - All comments on the node.
     // First confirm that we properly require an e-mail address.
     $subscribe_1 = array('notify' => TRUE, 'notify_type' => 1);
     $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), $subscribe_1);
-
-    // This is still a bad test to test for a static string showing on the page, but at least the definition of the string is centralized.
-    $expected_error = comment_notify_variable_registry_get('error_anonymous_email_missing');
-    $this->assertText(t($expected_error));
 
     // Try again with an e-mail address.
     $contact_1 = array('name' => $this->randomName(), 'mail' => $this->getRandomEmailAddress());
@@ -115,7 +111,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
       $edit += $contact;
     }
 
-    $this->drupalPost('node/' . $node->nid, $edit, t('Save'));
+    $this->backdropPost('node/' . $node->nid, $edit, t('Save'));
 
     $match = array();
     // Get comment ID
@@ -151,7 +147,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
       $regex .= $comment->comment . '(.*?)'; // Match comment.
       $regex .= '<\/div>/s'; // Dot matches newlines and ensure that match doesn't bleed outside comment div.
 
-      return (boolean)preg_match($regex, $this->drupalGetContent());
+      return (boolean)preg_match($regex, $this->backdropGetContent());
     }
     else {
       return FALSE;
@@ -160,7 +156,7 @@ class CommentNotifyTestCase extends DrupalWebTestCase {
 
   /**
    * Returns a randomly generated valid email address.
-   * 
+   *
    * @return string.
    */
   function getRandomEmailAddress() {

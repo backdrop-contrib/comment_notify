@@ -14,6 +14,7 @@
  *  StdClass if found, else NULL
  */
 function comment_notify_get_user_notification_setting($uid) {
+  $config = config('comment_notify.settings');
   $users = &backdrop_static(__FUNCTION__);
   if (!isset($users[$uid])) {
     if (is_null($uid)) {
@@ -21,10 +22,9 @@ function comment_notify_get_user_notification_setting($uid) {
     }
     // Handle anonymous users with defaults.
     if ($uid == 0) {
-//      $users[0] = new stdClass();
-      $users[0] = entity_create('user', array('uid' => 0));
-      $users[0]->comment_notify = comment_notify_variable_registry_get('default_registered_mailalert');
-      $users[0]->node_notify = comment_notify_variable_registry_get('node_notify_default_mailalert');
+      $users[0] = new stdClass();
+      $users[0]->comment_notify = $config->get('default_registered_mailalert');
+      $users[0]->node_notify = $config->get('node_notify_default_mailalert');
     }
     else {
       $setting = db_select('comment_notify_user_settings', 'cnus')
@@ -45,9 +45,10 @@ function comment_notify_get_user_notification_setting($uid) {
 }
 
 function comment_notify_get_default_notification_setting() {
+  $config = config('comment_notify.settings');
   return (object) array(
-    'comment_notify' => comment_notify_variable_registry_get('default_registered_mailalert'),
-    'node_notify' => comment_notify_variable_registry_get('node_notify_default_mailalert')
+    'comment_notify' => $config->get('default_registered_mailalert'),
+    'node_notify' => $config->get('node_notify_default_mailalert')
   );
 }
 
@@ -324,14 +325,7 @@ function comment_notify_variable_registry_get($name) {
 
   // Errors
   $variables['error_anonymous_email_missing'] = 'If you want to subscribe to comments you must supply a valid e-mail address.';
-
-  $config = config_get("comment_notify.settings", $name);
-  debug($config);
-
-  if (isset($config)) {
-    return $config;
-  }
-  return $variables[$name];
+  return variable_get("comment_notify_" . $name, $variables[$name]);
 }
 
 /**
@@ -342,5 +336,5 @@ function comment_notify_variable_registry_get($name) {
  * @return boolean
  */
 function comment_notify_variable_registry_set($name, $value) {
-  return config_set("comment_notify.settings", $name, $value);
+  return variable_set("comment_notify_" . $name, $value);
 }
