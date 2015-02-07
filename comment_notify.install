@@ -40,6 +40,7 @@ function comment_notify_uninstall() {
   variable_del('node_notify_default_mailtext');
   db_delete('variable')
     ->where('name', "comment_notify_%", 'LIKE');
+  backdrop_uninstall_schema('comment_notify');
 }
 
 /**
@@ -109,76 +110,83 @@ function comment_notify_schema() {
 }
 
 /**
- * Head 2 head update for the new size of the hash field.
+ * Implements hook_update_last_removed().
  */
-function comment_notify_update_7002() {
-  $new_spec = array(
-    'type' => 'varchar',
-    'description' => 'A hash of unique information about the commenter.  Used for unsubscribing users.',
-    'length' => '128',
-    'not null' => TRUE,
-    'default' => ''
-  );
-  $keys = array(
-    'indexes' => array('notify_hash' => array('notify_hash')),
-  );
-  db_drop_index('comment_notify', 'notify_hash');
-  db_change_field('comment_notify', 'notify_hash', 'notify_hash', $new_spec, $keys);
+function comment_notify_update_last_removed() {
+  return 7005;
+}
+
+
+/**
+ * @defgroup updates-7.x-to-1.x Updates from 7.x to 1.x
+ * @{
+ * Update functions from Drupal 7.x to Backdrop CMS 1.x.
+ */
+
+/**
+ * Move comment_notify settings from variables to config.
+ */
+function comment_notify_update_1000() {
+  // Migrate variables to config.
+  $config = config('comment_notify.settings');
+  $config->set('available_alerts', update_variable_get('comment_notify_available_alerts', array(1 => 1, 2 => 2)));
+  $config->set('default_anon_mailalert', update_variable_get('comment_notify_default_anon_mailalert', 1));
+  $config->set('default_registered_mailalert', update_variable_get('comment_notify_default_registered_mailalert', 0));
+  $config->set('node_notify_default_mailalert', update_variable_get('comment_notify_node_notify_default_mailalert', 0));
+  $config->set('node_types', update_variable_get('comment_notify_node_types', array('article' => 'article')));
+  $config->set('node_notify_default_mailtext', update_variable_get('comment_notify_node_notify_default_mailtext', 'Hi [comment:node:author],
+
+You have received a comment on: "[comment:node:title]"
+
+----
+[comment:title]
+[comment:body]
+----
+
+You can view the comment at the following url
+[comment:url]
+
+You will receive emails like this for all replies to your posts. You can
+disable this by logging in and changing the settings on your user account at
+[comment:node:author:edit-url].
+
+-- [site:name] team
+[site:url]'));
+  $config->set('comment_notify_default_mailtext', update_variable_get('comment_notify_comment_notify_default_mailtext', 'Hi [comment-subscribed:author],
+
+[comment:author] has commented on: "[comment:node:title]"
+
+----
+[comment:title]
+[comment:body]
+----
+
+You can view the comment at the following url
+[comment:url]
+
+You can stop receiving emails when someone replies to this post,
+by going to [comment-subscribed:unsubscribe-url]
+
+You can set up auto-following feature for all future posts
+by creating your own user with a few clicks here [site:login-url]
+
+-- [site:name] team
+[site:url]'));
+
+  $config->save();
+
+  // Delete variables.
+  update_variable_del('comment_notify_available_alerts');
+  update_variable_del('comment_notify_comment_notify_default_mailtext');
+  update_variable_del('comment_notify_default_anon_mailalert');
+  update_variable_del('comment_notify_default_registered_mailalert');
+  update_variable_del('comment_notify_node_notify_default_mailalert');
+  update_variable_del('comment_notify_node_notify_default_mailtext');
+  update_variable_del('comment_notify_node_types');
+
 }
 
 /**
- * Fix tokens in comment subscriber e-mail template.
+ * @} End of "defgroup updates-7.x-to-1.x"
+ * The next series of updates should start at 2000.
  */
-function comment_notify_update_7003() {
-  $variables = array(
-    'comment_notify_author_subject' => 'author',
-    'comment_notify_node_notify_default_mailtext' => 'author',
-    'comment_notify_watcher_subject' => 'commenter',
-    'comment_notify_comment_notify_default_mailtext' => 'commenter',
-  );
-  foreach ($variables as $variable => $context) {
-    // If the variable is using the default value, this will return NULL and we
-    // can skip it.
-    if ($text = variable_get($variable)) {
-      $replacements = array(
-        '[comment:unsubscribe-url]' => '[comment-subscribed:unsubscribe-url]',
-        '[comment:name]' => '[comment:author]',
-        '[node:' => '[comment:node:', // Replace all node tokens with comment:node.
-      );
-      if ($context == 'author') {
-        $replacements['[user:name]'] = '[comment:node:author]';
-        $replacements['[user:'] = '[comment:node:author:';
-      }
-      elseif ($context == 'commenter') {
-        $replacements['[user:name]'] = '[comment-subscribed:author]';
-        $replacements['[user:'] = '[comment-subscribed:author:';
-      }
-      $text = strtr($text, $replacements);
-      variable_set($variable, $text);
-    }
-  }
-  return 'Comment Notify token strings updated.';
-}
-
-/**
- * Fix a missing default causes warnings for Postgresql and some MySQL.
- */
-function comment_notify_update_7004() {
-  db_change_field('comment_notify', 'notified', 'notified',  array('type' => 'int', 'size' => 'small', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
-}
-
-/**
- * Fix minor schema inconsistencies caused by the last update.
- */
-function comment_notify_update_7005() {
-  // Previous update altered size and unsigned unnecessarily.
-  $notified_field = array(
-    'type' => 'int',
-    'description' => 'A boolean indicator for whether or not a notification for the comment has been sent: 1 means yes, 0 means no.',
-    'size' => 'tiny',
-    'not null' => TRUE,
-    'default' => 0,
-    'disp-width' => '11',
-  );
-  db_change_field('comment_notify', 'notified', 'notified', $notified_field);
-}

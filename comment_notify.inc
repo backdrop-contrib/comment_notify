@@ -14,7 +14,8 @@
  *  StdClass if found, else NULL
  */
 function comment_notify_get_user_notification_setting($uid) {
-  $users = &drupal_static(__FUNCTION__);
+  $config = config('comment_notify.settings');
+  $users = &backdrop_static(__FUNCTION__);
   if (!isset($users[$uid])) {
     if (is_null($uid)) {
       throw new Exception('Cannot get user preference, uid missing');
@@ -22,8 +23,8 @@ function comment_notify_get_user_notification_setting($uid) {
     // Handle anonymous users with defaults.
     if ($uid == 0) {
       $users[0] = new stdClass();
-      $users[0]->comment_notify = comment_notify_variable_registry_get('default_registered_mailalert');
-      $users[0]->node_notify = comment_notify_variable_registry_get('node_notify_default_mailalert');
+      $users[0]->comment_notify = $config->get('default_registered_mailalert');
+      $users[0]->node_notify = $config->get('node_notify_default_mailalert');
     }
     else {
       $setting = db_select('comment_notify_user_settings', 'cnus')
@@ -44,9 +45,10 @@ function comment_notify_get_user_notification_setting($uid) {
 }
 
 function comment_notify_get_default_notification_setting() {
+  $config = config('comment_notify.settings');
   return (object) array(
-    'comment_notify' => comment_notify_variable_registry_get('default_registered_mailalert'),
-    'node_notify' => comment_notify_variable_registry_get('node_notify_default_mailalert')
+    'comment_notify' => $config->get('default_registered_mailalert'),
+    'node_notify' => $config->get('node_notify_default_mailalert')
   );
 }
 
@@ -296,43 +298,4 @@ function comment_notify_unsubscribe_by_hash($hash) {
     ->condition('notify_hash', $hash)
     ->execute();
   }
-}
-
-/**
- * Helper function to centralize variable management and defaults.
- *
- * All variables fall under the "comment_notify" psuedo namespace.  This ensures
- * consistancy, and eliminates some verbosity in the calling code.  In addition
- * by storing all of the variables in one place, we avoid repeating duplicate
- * defaults which are harder to maintain.
- *
- * @param string $name
- * @return mixed
- */
-function comment_notify_variable_registry_get($name) {
-  $variables = array();
-  $variables['author_subject'] = t('[site:name] :: new comment for your post.');
-  $variables['available_alerts'] = array(COMMENT_NOTIFY_NODE, COMMENT_NOTIFY_COMMENT);
-  $variables['default_anon_mailalert'] = COMMENT_NOTIFY_NODE;
-  $variables['node_notify_default_mailtext'] = AUTHOR_MAILTEXT;
-  $variables['default_registered_mailalert'] = COMMENT_NOTIFY_DISABLED;
-  $variables['node_notify_default_mailalert'] = 0;
-  $variables['watcher_subject'] = '[site:name] :: new comment on [comment:node:title]';
-  $variables['comment_notify_default_mailtext'] = DEFAULT_MAILTEXT;
-  $variables['node_types'] = array('article' => 'article');
-
-  // Errors
-  $variables['error_anonymous_email_missing'] = 'If you want to subscribe to comments you must supply a valid e-mail address.';
-  return variable_get("comment_notify_" . $name, $variables[$name]);
-}
-
-/**
- * Helper function to centralize setting variables.
- *
- * @param string $name
- * @param mixed $value
- * @return boolean
- */
-function comment_notify_variable_registry_set($name, $value) {
-  return variable_set("comment_notify_" . $name, $value);
 }
