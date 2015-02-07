@@ -18,34 +18,25 @@ Features
 Installation
 ------------
 
-1. Enable the module from the Modules admin page from "Modules"
- - /admin/modules
+1. Enable the module from the Modules admin page from "Modules": `/admin/modules`
 
-2. Grant permission to use this module from "People > Permissions"
- - /admin/people/permissions#module-comment_notify
+2. Grant permission to use this module from "People > Permissions": `/admin/people/permissions#module-comment_notify`
 
-3. Set permissions for commenting as per usual from "People > Permissions"
- - /admin/people/permissions#module-comment
+3. Set permissions for commenting as per usual from "People > Permissions": `/admin/people/permissions#module-comment`
 
-4. Configure the settings for comments for content types from Structure
-   > Content types > [Your content type] > Edit: "Comment settings"
- - /admin/structure/types/manage/[your_content_type]
- - e.g. /admin/structure/types/manage/page
+4. Configure the settings for comments for content types from Structure > Content types > [Your content type] > Edit: "Comment settings": `/admin/structure/types/manage/[your_content_type]`, for example, `/admin/structure/types/manage/page`
 
- - Look for "Anonymous commenting" and set to either:
-     "Anonymous posters may leave their contact information" OR
-     "Anonymous posters must leave their contact information"
+ - Look for "Anonymous commenting" and set to either: "Anonymous posters may leave their contact information" OR "Anonymous posters must leave their contact information"
 
-5. Configure this module at Configuration > People > Comment Notify
-	- /admin/config/people/comment_notify
+5. Configure this module at Configuration > People > Comment Notify: `/admin/config/people/comment_notify`
 
-  -Determine which content types to activate it for
-  -Determine which subscription modes are allowed
-  -Configure the templates for the e-mails
+ - Determine which content types to activate it for
+ - Determine which subscription modes are allowed
+ - Configure the templates for the e-mails
 
 6. Set your node-notify settings per user (optional)
 
-The module includes a feature to notify the node author of all comments on their nodes. To enable this go to "My account" > Edit (e.g. user/1/edit) and change the settings there, i.e., "Comment follow-up notification settings"
+The module includes a feature to notify the node author of all comments on their nodes. To enable this go to "My account" > Edit (e.g. `user/1/edit`) and change the settings there, i.e., "Comment follow-up notification settings".
 
 Template Translation
 --------------------
@@ -56,7 +47,7 @@ Notification templates are passed through t() before being added to the email's 
 
 2. Choose a node in which you are not the auther and has comments and comment on it. This will send an email to the author and other commenters.
 
-3. Open the Translation Interface, located at    admin/config/regional/translate/translate
+3. Open the Translation Interface, located at    `admin/config/regional/translate/translate`
 
 4. Search for the template strings and add the translations.
 
