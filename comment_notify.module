@@ -327,23 +327,26 @@ function comment_notify_form_alter(&$form, &$form_state, $form_id) {
   // Construct the user form
 }
 
-function comment_notify_user_update(&$edit, $account, $category) {
-  if ($category != 'account') {
-    return;
-  }
-  if (isset($edit['node_notify']) && isset($edit['comment_notify'])) {
+/*
+ * Implements hook_user_update()
+ */
+function comment_notify_user_update($account) {
+
+  if (isset($account->node_notify) && isset($account->comment_notify)) {
     module_load_include('inc', 'comment_notify', 'comment_notify');
 
     // Save the values of node_notify_mailalert and comment_notify_mailalert
     // to {comment_notify_user_settings}.
-    comment_notify_set_user_notification_setting($account->uid, $edit['node_notify'], $edit['comment_notify']);
+    comment_notify_set_user_notification_setting($account->uid, $account->node_notify, $account->comment_notify);
   }
   // Unset them from $user so they don't also get saved into {users}.data.
-  unset($edit['node_notify']);
-  unset($edit['comment_notify']);
-
+  unset($account->node_notify);
+  unset($account->comment_notify);
 }
 
+/*
+ * Implements hook_user_load()
+ */
 function comment_notify_user_load($users) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
 
@@ -355,6 +358,9 @@ function comment_notify_user_load($users) {
   return;
 }
 
+/*
+ * Implements hook_user_cancel()
+ */
 function comment_notify_user_cancel($edit, $account, $method) {
   module_load_include('inc', 'comment_notify', 'comment_notify');
   comment_notify_delete_user_notification_setting($account->uid);
