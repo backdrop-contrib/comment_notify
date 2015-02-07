@@ -121,12 +121,12 @@ function comment_notify_form_comment_form_alter(&$form, &$form_state, $form_id) 
 function comment_notify_permission() {
   return array(
     'administer comment notify' => array(
-      'title' => 'Administer Comment Notify',
-      'description' => 'Change global comment notification settings.',
+      'title' => t('Administer Comment Notify'),
+      'description' => t('Change global comment notification settings.'),
   ),
     'subscribe to comments' => array(
-      'title' => 'Subscribe to comment notifications',
-      'description' => 'Subscribe to recieve notifications when new comments are posted.',
+      'title' => t('Subscribe to comment notifications'),
+      'description' => t('Subscribe to recieve notifications when new comments are posted.'),
   ),
   );
 }
