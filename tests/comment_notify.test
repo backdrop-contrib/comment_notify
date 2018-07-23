@@ -5,16 +5,6 @@
  * Creates tests for comment_notify module.
  */
 class CommentNotifyTestCase extends BackdropWebTestCase {
-  /**
-   * Implementation of getInfo().
-   */
-  public static function getInfo() {
-    return array(
-      'name' => t('Comment notify general tests'),
-      'description' => t('Test the various comment notification settings.'),
-      'group' => t('Comment notify'),
-    );
-  }
 
   /**
    * Implementation of setUp().
@@ -34,28 +24,36 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
     $admin_user = $this->backdropCreateUser(array('administer comment notify', 'administer permissions', 'administer comments'));
     $this->backdropLogin($admin_user);
 
-    // Enable comment notify on this node and allow anonymous information in comments.
-    variable_set('comment_notify_node_types', array('article' => 'article', 'page' => 0));
-    variable_set('comment_anonymous_article', '1');
+    // Enable comment notify on this node, allow comment title, and allow anonymous information in comments.
+    config_set('comment_notify.settings', 'node_types', array('post' => 'post', 'page' => 0));
+    $this->setCommentSettings('comment_anonymous', '1', format_string('Anonymous commenting set to level @level.', array('@level' => '1')));
+    $this->setCommentSettings('comment_subject_field', '1', 'Comment subject enabled.');
 
     // Create a node with comments allowed.
-    $this->node = $this->backdropCreateNode(array('type' => 'article', 'promote' => NODE_PROMOTED, 'comment' => COMMENT_NODE_OPEN));
+    $this->node = $this->backdropCreateNode(array('type' => 'post', 'promote' => NODE_PROMOTED, 'comment' => COMMENT_NODE_OPEN));
 
     // Allow anonymous users to post comments and get notifications.
-    user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access comments', 'access content', 'post comments', 'skip comment approval', 'subscribe to comments'));
+    user_role_grant_permissions(BACKDROP_ANONYMOUS_ROLE, array('access comments', 'access content', 'post comments', 'skip comment approval', 'subscribe to comments'));
     $this->backdropLogout();
 
     // Notify type 1 - All comments on the node.
     // First confirm that we properly require an e-mail address.
     $subscribe_1 = array('notify' => TRUE, 'notify_type' => 1);
-    $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), $subscribe_1);
+
+    $edit['subject'] = $this->randomName();
+    $edit['comment_body[' . LANGUAGE_NONE . '][0][value]'] = $this->randomName();
+    $edit += $subscribe_1;
+    $this->backdropGet('comment/reply/' . $this->node->nid);
+    $result = $this->backdropPost(NULL, $edit, t('Save'));
+    $this->assertText('If you want to subscribe to comments you must supply a valid e-mail address.', 'Required email not found');
 
     // Try again with an e-mail address.
     $contact_1 = array('name' => $this->randomName(), 'mail' => $this->getRandomEmailAddress());
     $anonymous_comment_1 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), $subscribe_1, $contact_1);
 
     // Confirm that the notification is saved.
-    $result = comment_notify_get_notification_type($anonymous_comment_1['id']);
+    $result = comment_notify_get_notification_type($anonymous_comment_1->id);
+
     $this->assertEqual($result, $subscribe_1['notify_type'], 'Notify selection option 1 is saved properly.');
 
     // Notify type 2 - replies to a comment.
@@ -64,20 +62,21 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
     $anonymous_comment_2 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), $subscribe_2, $contact_2);
 
     // Confirm that the notification is saved.
-    $result = comment_notify_get_notification_type($anonymous_comment_2['id']);
+    $result = comment_notify_get_notification_type($anonymous_comment_2->id);
     $this->assertEqual($result, $subscribe_2['notify_type'], 'Notify selection option 2 is saved properly.');
 
     // Confirm that the original subscriber with all comments on this node got their mail.
     $this->assertMail('to', $contact_1['mail'], t('Message was sent to the proper anonymous user.'));
 
     // Notify type 0 (i.e. only one mode is enabled).
-    variable_set('comment_notify_available_alerts', array(1 => 0, 2 => 2));
+    config_set('comment_notify.settings', 'available_alerts', array(1 => 0, 2 => 2));
     $subscribe_0 = array('notify' => TRUE);
     $contact_0 = array('mail' => $this->getRandomEmailAddress());
     $anonymous_comment_0 = $this->postCommentNotifyComment($this->node, $this->randomName(), $this->randomName(), $subscribe_0, $contact_0);
 
     // Confirm that the notification is saved.
-    $result = comment_notify_get_notification_type($anonymous_comment_0['id']);
+    $result = comment_notify_get_notification_type($anonymous_comment_0->id);
+
     $this->assertEqual($result, 2, 'Notify selection option 0 is saved properly.');
 
     // TODO yet more tests.
@@ -94,14 +93,28 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
    * @param object $node Node to post comment on.
    * @param string $subject Comment subject.
    * @param string $comment Comment body.
-   * @param boolean $preview Should preview be required.
+   * @param boolean $notify Notify options.
    * @param mixed $contact Set to NULL for no contact info, TRUE to ignore success checking, and array of values to set contact info.
    */
-  function postCommentNotifyComment($node, $subject, $comment, $notify, $contact = NULL) {
+  function postCommentNotifyComment($node, $subject = '', $comment, $notify, $contact = NULL) {
     $langcode = LANGUAGE_NONE;
     $edit = array();
-    $edit['subject'] = $subject;
     $edit['comment_body[' . $langcode . '][0][value]'] = $comment;
+    $node_type = node_type_get_type('post');
+    $preview_mode = $node_type->settings['comment_preview'];
+    $subject_mode = $node_type->settings['comment_subject_field'];
+
+    // Must get the page before we test for fields.
+    if ($node !== NULL) {
+      $this->backdropGet('comment/reply/' . $node->nid);
+    }
+
+    if ($subject_mode == TRUE) {
+      $edit['subject'] = $subject;
+    }
+    else {
+      $this->assertNoFieldByName('subject', '', 'Title field not found.');
+    }
 
     if ($notify !== NULL && is_array($notify)) {
       $edit += $notify;
@@ -110,24 +123,40 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
     if ($contact !== NULL && is_array($contact)) {
       $edit += $contact;
     }
+    switch ($preview_mode) {
+      case BACKDROP_REQUIRED:
+        // Preview required so no save button should be found.
+        $this->assertNoFieldByName('op', t('Save'), 'Save button not found.');
+        $this->backdropPost(NULL, $edit, t('Preview'));
+        // Don't break here so that we can test post-preview field presence and
+        // function below.
+      case BACKDROP_OPTIONAL:
+        $this->assertFieldByName('op', t('Preview'), 'Preview button found.');
+        $this->assertFieldByName('op', t('Save'), 'Save button found.');
+        $this->backdropPost(NULL, $edit, t('Save'));
+        break;
 
-    $this->backdropPost('node/' . $node->nid, $edit, t('Save'));
-
+      case BACKDROP_DISABLED:
+        $this->assertNoFieldByName('op', t('Preview'), 'Preview button not found.');
+        $this->assertFieldByName('op', t('Save'), 'Save button found.');
+        $this->backdropPost(NULL, $edit, t('Save'));
+        break;
+    }
     $match = array();
     // Get comment ID
-    preg_match('/#comment-([^"]+)/', $this->getURL(), $match);
+    preg_match('/#comment-([0-9]+)/', $this->getURL(), $match);
 
     // Get comment.
-    if (!empty($match[1])) { // If true then attempting to find error message.
-      if ($subject) {
+    if ($contact !== TRUE) { // If true then attempting to find error message.
+      if ($subject && $subject_mode) {
         $this->assertText($subject, 'Comment subject posted.');
       }
       $this->assertText($comment, 'Comment body posted.');
-      $this->assertTrue((!empty($match) && !empty($match[1])), t('Comment id found.'));
+      $this->assertTrue((!empty($match) && !empty($match[1])), 'Comment id found.');
     }
 
     if (isset($match[1])) {
-      return array('id' => $match[1], 'subject' => $subject, 'comment' => $comment);
+      return entity_create('comment', array('id' => $match[1], 'subject' => $subject, 'comment' => $comment));
     }
   }
 
@@ -142,10 +171,10 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
     if ($comment && is_object($comment)) {
       $regex = '/' . ($reply ? '<div class="indented">(.*?)' : '');
       $regex .= '<a id="comment-' . $comment->id . '"(.*?)'; // Comment anchor.
-      $regex .= '<div(.*?)'; // Begin in comment div.
+      $regex .= '<article(.*?)'; // Begin in comment wrapper.
       $regex .= $comment->subject . '(.*?)'; // Match subject.
       $regex .= $comment->comment . '(.*?)'; // Match comment.
-      $regex .= '<\/div>/s'; // Dot matches newlines and ensure that match doesn't bleed outside comment div.
+      $regex .= '/s';
 
       return (boolean)preg_match($regex, $this->backdropGetContent());
     }
@@ -161,5 +190,23 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
    */
   function getRandomEmailAddress() {
     return $this->randomName() . '@example.com';
+  }
+
+  /**
+   * Sets a comment config for the post content type.
+   *
+   * @param string $name
+   *   Name of setting.
+   * @param string $value
+   *   Value of setting.
+   * @param string $message
+   *   Status message to display.
+   */
+  function setCommentSettings($name, $value, $message) {
+    $node_type = node_type_get_type('post');
+    $node_type->settings[$name] = $value;
+    node_type_save($node_type);
+    // Display status message.
+    $this->pass($message);
   }
 }

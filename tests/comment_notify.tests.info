@@ -1,0 +1,5 @@
+[CommentNotifyTestCase]
+name = Comment notify general tests
+description = Test the various comment notification settings.
+group = Comment notify
+file = comment_notify.test
