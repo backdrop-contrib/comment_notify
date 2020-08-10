@@ -74,7 +74,7 @@ This project is GPL v2 software. See the LICENSE.txt file in this directory for 
 Current Maintainers
 -------------------
 
-This module is currently seeking maintainers.
+* Herb v/d Dool (https://github.com/herbdool/)
 
 Credits
 -------
