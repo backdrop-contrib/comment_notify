@@ -57,7 +57,7 @@ Optional Modules
 Performance: If you notice that your site is very slow when submitting
 new comments it is possible that the problem is with sending the mails.
 One option is to use the Queue Mail module
-http://drupal.org/project/queue_mail
+http://drupal.org/project/queue_mail (note: module not yet ported to Backdrop CMS but should be easy if someone wants to take it on.)
 
 Compatibility Note
 ------------------
