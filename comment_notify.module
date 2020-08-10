@@ -576,7 +576,7 @@ function comment_notify_settings() {
 
   // Only perform comment_notify for certain node types.
   $enabled_types = $config->get('node_types');
-  $anonymous_problems = '';
+  $anonymous_problems = array();
 
   $node_types = node_type_get_types();
   foreach ($node_types as $type => $node_type) {
