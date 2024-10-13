@@ -736,13 +736,16 @@ function comment_notify_field_extra_fields() {
   module_load_include('inc', 'comment_notify', 'comment_notify');
   $extras = array();
 
-  foreach (config_get('comment_notify.settings', 'node_types') as $node_type) {
-    if (isset($node_type)) {
-      $extras['comment']['comment_node_' . $node_type]['form']['comment_notify_settings'] = array(
-        'label' => t('Comment Notify settings'),
-        'description' => t('@node_type settings for Comment Notify', array('@node_type' => ucwords($node_type))),
-        'weight' => 1,
-      );
+  $types = config_get('comment_notify.settings', 'node_types');
+  if (is_array($types) && !empty($types)) {
+    foreach ($types as $node_type) {
+      if (isset($node_type)) {
+        $extras['comment']['comment_node_' . $node_type]['form']['comment_notify_settings'] = array(
+          'label' => t('Comment Notify settings'),
+          'description' => t('@node_type settings for Comment Notify', array('@node_type' => ucwords($node_type))),
+          'weight' => 1,
+        );
+      }
     }
   }
 
