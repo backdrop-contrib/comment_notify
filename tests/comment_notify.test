@@ -176,7 +176,7 @@ class CommentNotifyTestCase extends BackdropWebTestCase {
       $regex .= $comment->comment . '(.*?)'; // Match comment.
       $regex .= '/s';
 
-      return (boolean)preg_match($regex, $this->backdropGetContent());
+      return (bool)preg_match($regex, $this->backdropGetContent());
     }
     else {
       return FALSE;
